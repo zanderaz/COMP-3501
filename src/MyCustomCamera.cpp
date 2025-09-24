@@ -24,8 +24,7 @@ void MyCustomCamera::update(float deltaTime) {
     if (ofGetKeyPressed('q')) move += getqUp();
     if (ofGetKeyPressed('e')) move -= getqUp();
 
-    if (glm::length(move) > 0.0f)  // did it move at all?
-    {
+    if (glm::length(move) > 0.0f) {
         move = glm::normalize(move) * movementSpeed * deltaTime;
         position = position + move;
     }
@@ -53,15 +52,13 @@ void MyCustomCamera::update(float deltaTime) {
 
 void MyCustomCamera::pitch(float amt) {
     glm::quat change = glm::angleAxis(amt, glm::vec3(1,0,0));
-    orientation = orientation*change;
-
+    orientation = orientation*change; // this is where q1 * q2 comes in
 }
 
 
 void MyCustomCamera::yaw(float amt) {
     glm::quat change = glm::angleAxis(amt, glm::vec3(0,1,0));
     orientation = orientation*change;
-    
 }
 
 
@@ -71,20 +68,16 @@ void MyCustomCamera::roll(float amt) {
 }
 
 glm::vec3 MyCustomCamera::getqForward() {
-
-
     return orientation*((-BASE_FORWARD)); // because we look down -z axis
 }
 
 
 glm::vec3 MyCustomCamera::getqSide() {
-
     return orientation*BASE_SIDE;
 }
 
 
 glm::vec3 MyCustomCamera::getqUp() {
-
     return orientation*BASE_UP;
 }
 
