@@ -27,4 +27,13 @@ class ofApp : public ofBaseApp{
 		ofNode body[500];
 
 		MyCustomCamera cam;
+
+		// track time
+		float time_elapsed;
+
+		// sound
+		ofSoundPlayer background_music;
+
+		// constants
+		const float TIME_INC = 0.016f;
 };
