@@ -28,6 +28,7 @@ protected:
 	float scale;
 	float angle;
 	glm::vec3 position;
+	glm::vec3 color;
 	glm::quat orientation;
 	ofMesh mesh;
 	glm::vec3 BASE_SIDE = glm::vec3(1, 0, 0);

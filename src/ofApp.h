@@ -4,8 +4,9 @@
 #include "MyCustomCamera.h"
 #include "GameObject.h"
 #include "PlayerGameObject.h"
+#include "EnemyGameObject.h"
 
-class ofApp : public ofBaseApp{
+class ofApp : public ofBaseApp {
 
 	public:
 		void setup();
@@ -23,6 +24,7 @@ class ofApp : public ofBaseApp{
 		void windowResized(int w, int h);
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
+		void exit(void) override;
 		
 		int asteroids;
 		
@@ -30,14 +32,13 @@ class ofApp : public ofBaseApp{
 
 		MyCustomCamera cam;
 
+		// game object collections
 		PlayerGameObject* player;
+		vector<EnemyGameObject*> opposition_vec;
   
 		// track time
 		float time_elapsed;
 
 		// sound
 		ofSoundPlayer background_music;
-
-		// constants
-		const float TIME_INC = 0.016f;
 };
