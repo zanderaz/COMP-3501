@@ -2,6 +2,7 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
+	player = new PlayerGameObject(glm::vec3(0, 0, -10), 1, 75.0f, 0.75f, cam);
 	asteroids = 200;
 	for (int i = 0; i < asteroids; i++)
 	{
@@ -14,17 +15,21 @@ void ofApp::setup(){
 	}
 }
 
+
 //--------------------------------------------------------------
 void ofApp::update(){
-	cam.update(0.016); // 60 fps
+	float delta_time = ofGetLastFrameTime();
+	// cam.update(0.016); // 60 fps
+	player->update(delta_time);
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-	cam.begin();
+	player->getCamera().begin();
 	for (int i = 0; i < asteroids; i++)
 		body[i].draw();
-	cam.end();
+	player->draw();
+	player->getCamera().end();
 }
 
 //--------------------------------------------------------------

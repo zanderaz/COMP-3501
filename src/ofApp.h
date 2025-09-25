@@ -2,6 +2,8 @@
 
 #include "ofMain.h"
 #include "MyCustomCamera.h"
+#include "GameObject.h"
+#include "PlayerGameObject.h"
 
 class ofApp : public ofBaseApp{
 
@@ -27,4 +29,6 @@ class ofApp : public ofBaseApp{
 		ofNode body[500];
 
 		MyCustomCamera cam;
+
+		PlayerGameObject* player;
 };

@@ -14,6 +14,7 @@ MyCustomCamera::MyCustomCamera() {
 }
 
 void MyCustomCamera::update(float deltaTime) {
+    /*
     glm::vec3 move(0.0f);
 
     // WASD movement
@@ -45,7 +46,7 @@ void MyCustomCamera::update(float deltaTime) {
     // need to set ofCamera parameters using internal position, orientation
     setPosition(position);
     setOrientation(orientation);
-
+    */
 }
 
 // TODO: getqForward, getqSide, getqUp;
