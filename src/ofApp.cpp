@@ -45,7 +45,6 @@ void ofApp::update() {
 
 	for (int i = 0; i < opposition_vec.size(); ++i) {
 		EnemyGameObject* enemy = opposition_vec[i];
-		cout << "WHITEOID SPOTTED. SAY GOODBYE CRACKA!!!!!" << endl;
 		enemy->faceTowards(player->getPosition());
 		enemy->update(delta_time);
 	}
