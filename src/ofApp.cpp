@@ -1,7 +1,8 @@
 #include "ofApp.h"
 
 //--------------------------------------------------------------
-void ofApp::setup() {
+void ofApp::setup(){
+	player = new PlayerGameObject(glm::vec3(0, 0, -10), 1, 75.0f, 0.75f, cam);
 
 	// initalize member vars
 	time_elapsed = 0.f;
@@ -27,28 +28,25 @@ void ofApp::setup() {
 	}
 }
 
+
 //--------------------------------------------------------------
-void ofApp::update() {
-	cam.update(TIME_INC);
-	time_elapsed += TIME_INC;
+void ofApp::update(){
+	float delta_time = ofGetLastFrameTime();
+	// cam.update(0.016); // 60 fps
+	player->update(delta_time);
+  // cam.update(TIME_INC);
+	// time_elapsed += TIME_INC;
 }
 
 //--------------------------------------------------------------
-void ofApp::draw() {
-
-	// handle world-coord objects
-	cam.begin();
-
-	// asteroids
+void ofApp::draw(){
+	player->getCamera().begin();
 	for (int i = 0; i < asteroids; i++)
 		body[i].draw();
+	player->draw();
+	player->getCamera().end();
+  ofDrawBitmapString("Time Elapsed: " + ofToString(time_elapsed), ofGetWidth() - 160, 30);
 
-	cam.end();
-
-	// HUD elements
-	ofDrawBitmapString("Time Elapsed: " + ofToString(time_elapsed), ofGetWidth() - 160, 30);
-
-}
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){

@@ -2,6 +2,8 @@
 
 #include "ofMain.h"
 #include "MyCustomCamera.h"
+#include "GameObject.h"
+#include "PlayerGameObject.h"
 
 class ofApp : public ofBaseApp{
 
@@ -28,6 +30,8 @@ class ofApp : public ofBaseApp{
 
 		MyCustomCamera cam;
 
+		PlayerGameObject* player;
+  
 		// track time
 		float time_elapsed;
 
