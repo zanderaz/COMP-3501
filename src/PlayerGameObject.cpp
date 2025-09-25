@@ -57,7 +57,6 @@ void PlayerGameObject::draw() {
 	ofTranslate(position);
 	mesh.draw();
 	ofPopMatrix();
-    // cout << "yo" << endl;
 }
 
 void PlayerGameObject::pitch(float amt) {
