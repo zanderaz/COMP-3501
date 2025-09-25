@@ -2,7 +2,7 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-	player = new PlayerGameObject(glm::vec3(0, 0, -10), 1, 75.0f, 0.75f, cam);
+	player = new PlayerGameObject(glm::vec3(0, 0, -10), 1, 100.0f, 0.75f, cam);
 
 	// initalize member vars
 	time_elapsed = 0.f;

@@ -1,25 +1,35 @@
 #include "PlayerGameObject.h"
 
-PlayerGameObject::PlayerGameObject(const glm::vec3& position, float scale, float movementSpeed, float rotationSpeed, MyCustomCamera cam) 
-	: GameObject(position, scale), movementSpeed(movementSpeed), rotationSpeed(rotationSpeed), cam(cam) {
+PlayerGameObject::PlayerGameObject(const glm::vec3& position, float scale, float acceleration, float rotationSpeed, MyCustomCamera cam)
+	: GameObject(position, scale), acceleration(acceleration), rotationSpeed(rotationSpeed), cam(cam) {
 	velocity = glm::vec3(0);
+    speed = 0.0f;
+    maxSpeed = 400.0f;
 	mesh = ofMesh::sphere(25);
 }
 
 void PlayerGameObject::update(float deltaTime) {
-    glm::vec3 move(0.0f);
+    // glm::vec3 move(0.0f);
 
-    if (ofGetKeyPressed('w')) move += getqForward();
-    if (ofGetKeyPressed('s')) move -= getqForward();
+    /*
     if (ofGetKeyPressed('a')) move -= getqSide();
     if (ofGetKeyPressed('d')) move += getqSide();
     if (ofGetKeyPressed('q')) move += getqUp();
     if (ofGetKeyPressed('e')) move -= getqUp();
+    */
 
-    if (glm::length(move) > 0.0f) {
-        move = glm::normalize(move) * movementSpeed * deltaTime;
-        position += move;
+    // 
+    if (ofGetKeyPressed('w')) {
+        speed += acceleration * deltaTime; // accelerate
+        if (speed > maxSpeed) speed = maxSpeed;
     }
+    if (ofGetKeyPressed('s')) {
+        speed -= acceleration * deltaTime; // decelerate
+        if (speed < 0.0f) speed = 0.0f;
+    }
+
+    glm::vec3 forward = getqForward(); // unit forward vector from orientation
+    position += getqForward() * speed * deltaTime;
 
     float rotationamt = rotationSpeed * deltaTime;
     if (ofGetKeyPressed('i')) pitch(rotationamt);
