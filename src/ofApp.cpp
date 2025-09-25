@@ -34,19 +34,20 @@ void ofApp::update(){
 	float delta_time = ofGetLastFrameTime();
 	// cam.update(0.016); // 60 fps
 	player->update(delta_time);
-  // cam.update(TIME_INC);
+	// cam.update(TIME_INC);
 	// time_elapsed += TIME_INC;
 }
 
 //--------------------------------------------------------------
-void ofApp::draw(){
+void ofApp::draw() {
 	player->getCamera().begin();
 	for (int i = 0; i < asteroids; i++)
 		body[i].draw();
 	player->draw();
 	player->getCamera().end();
-  ofDrawBitmapString("Time Elapsed: " + ofToString(time_elapsed), ofGetWidth() - 160, 30);
+	ofDrawBitmapString("Time Elapsed: " + ofToString(time_elapsed), ofGetWidth() - 160, 30);
 
+}
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
