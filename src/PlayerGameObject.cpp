@@ -5,6 +5,7 @@ PlayerGameObject::PlayerGameObject(const glm::vec3& position, float scale, float
 	velocity = glm::vec3(0);
     speed = 0.0f;
     maxSpeed = 400.0f;
+    power_up_speed_mult = 1.f;
     initRadius = 25;
     radius = initRadius;
     minRadius = 15;
@@ -55,7 +56,7 @@ void PlayerGameObject::update(float deltaTime) {
     }
     if (ofGetKeyPressed('w')) {
         speed += acceleration * speedMult * deltaTime;
-        if (speed > maxSpeed) speed = maxSpeed;
+        if (speed > maxSpeed * power_up_speed_mult) speed = maxSpeed;
     }
     if (ofGetKeyPressed('s')) {
         speed -= acceleration * speedMult * deltaTime;
@@ -89,6 +90,11 @@ void PlayerGameObject::update(float deltaTime) {
     cam.setPosition(position - getqForward() * 150.0f + getqUp() * 40.0f); // third person camera follow (saved in case we need later and for testing)
     // cam.setPosition(position);
     cam.setOrientation(orientation);
+}
+
+// increase the power-up speed multiplier
+void PlayerGameObject::powerUpSpeedIncrease() {
+    power_up_speed_mult += 0.3f;
 }
 
 // draw method (first person so really not used right now)
