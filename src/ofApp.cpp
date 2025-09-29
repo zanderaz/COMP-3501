@@ -3,10 +3,13 @@
 //--------------------------------------------------------------
 void ofApp::setup() {
 
+	ofSetWindowTitle("Assignment 3 - Shrinking Rocket Racing Game");
+
 	player = new PlayerGameObject(glm::vec3(0, 0, -10), 1.0f, 100.0f, 1.0f, cam);
 
 	// initalize member vars
 	time_elapsed = 0.f;
+	gameOver = false;
 
 	// setup asteroids
 	asteroids = 200;
@@ -18,10 +21,16 @@ void ofApp::setup() {
 	}
 
 	// populate the game with opposition objects (placeholder positions, change to beacons later)
-	opposition_vec.push_back(new EnemyGameObject(glm::vec3(-99.f, 0.f, -99.f), 1.f));
-	opposition_vec.push_back(new EnemyGameObject(glm::vec3(99.f, 0.f, -99.f), 1.f));
-	opposition_vec.push_back(new EnemyGameObject(glm::vec3(99.f, 0.f, 99.f), 1.f));
-	opposition_vec.push_back(new EnemyGameObject(glm::vec3(-99.f, 0.f, 99.f), 1.f));
+	opposition_vec.push_back(new EnemyGameObject(glm::vec3(-300.f, -150.f, -300.f), 1.f));
+	opposition_vec.push_back(new EnemyGameObject(glm::vec3(300.f, -50.f, -300.f), 1.f));
+	opposition_vec.push_back(new EnemyGameObject(glm::vec3(300.f, 50.f, 300.f), 1.f));
+	opposition_vec.push_back(new EnemyGameObject(glm::vec3(-300.f, 150.f, 300.f), 1.f));
+
+	// populate the game with power ups (placeholder positions again)
+	power_up_vec.push_back(new PowerUpObject(glm::vec3(500.f, -450.f, 400.f), 1.f));
+	power_up_vec.push_back(new PowerUpObject(glm::vec3(-400.f, 450.f, 500.f), 1.f));
+	power_up_vec.push_back(new PowerUpObject(glm::vec3(-500.f, 350.f, -500.f), 1.f));
+	power_up_vec.push_back(new PowerUpObject(glm::vec3(450.f, 500.f, -400.f), 1.f));
 
 	// setup sound
 	try {
@@ -33,8 +42,6 @@ void ofApp::setup() {
 	catch (...) {
 		cout << "Music file could not be loaded. Ensure bin/data/bg_music.mp3 exists." << endl;
 	}
-
-	gameOver = false; // game is not over!!!!1!111!
 }
 
 
@@ -53,6 +60,7 @@ void ofApp::update() {
 
 	// game not over
 	else {
+
 		// check if player should be able to be hit
 		if (player->getInvincibilityTimer().FinishedAndStop()) {
 			player->setColour(glm::vec3(255.0f));
@@ -89,6 +97,21 @@ void ofApp::update() {
 
 		}
 
+		// updates for power ups
+		for (int i = 0; i < power_up_vec.size(); ++i) {
+			PowerUpObject* power_up = power_up_vec[i];
+
+			// check for collision between player and power up
+			float dist = glm::distance(player->getPosition(), power_up->getPosition());
+			if (dist <= player->getRadius() + power_up->getRadius()) {
+				
+				// handle collision
+				delete power_up;
+				power_up_vec.erase(power_up_vec.begin() + i);
+				player->powerUpSpeedIncrease();
+			}
+		}
+
 		time_elapsed += ofGetLastFrameTime();
 	}
 }
@@ -103,11 +126,12 @@ void ofApp::draw() {
 	for (int i = 0; i < asteroids; i++) {
 		body[i].draw();
 	}
-
 	player->draw();
-
 	for (int i = 0; i < opposition_vec.size(); ++i) {
 		opposition_vec[i]->draw();
+	}
+	for (int i = 0; i < power_up_vec.size(); ++i) {
+		power_up_vec[i]->draw();
 	}
 
 	player->getCamera().end();
@@ -115,7 +139,7 @@ void ofApp::draw() {
 
 	// reset colour, draw HUD elements
 	ofSetColor(255, 255, 255);
-	ofDrawBitmapString("Time Elapsed: " + ofToString(time_elapsed), ofGetWidth() - 160, 30);
+	ofDrawBitmapString("Time Elapsed: " + ofToString(time_elapsed, 2), ofGetWidth() - 160, 30);
 	ofDrawBitmapString("Player Health: " + ofToString(player->getHealth()), ofGetWidth() - 130, 70);
 	ofDrawBitmapString("Player Scale: " + ofToString(player->getScale(), 2), ofGetWidth() - 145, 50);
 
@@ -185,8 +209,11 @@ void ofApp::exit(void) {
 
 	delete player;
 
-	// clean up opposition vec
 	for (int i = 0; i < opposition_vec.size(); i++) {
 		delete opposition_vec[i];
+	}
+
+	for (int i = 0; i < power_up_vec.size(); i++) {
+		delete power_up_vec[i];
 	}
 }

@@ -25,6 +25,7 @@ public:
 	
 	void draw() override;
 	void update(float deltaTime) override;
+	void powerUpSpeedIncrease(void);
 
 	// rotation
 	void roll(float amt);
@@ -41,6 +42,7 @@ protected:
 	float rotationSpeed;
 	float speed;
 	float maxSpeed;
+	float power_up_speed_mult;
 	float radius;
 	float initRadius;
 	float maxRadius;
