@@ -3,7 +3,7 @@
 //--------------------------------------------------------------
 void ofApp::setup() {
 
-	player = new PlayerGameObject(glm::vec3(0, 0, -10), 1, 100.0f, 0.75f, cam);
+	player = new PlayerGameObject(glm::vec3(0, 0, -10), 1.0f, 100.0f, 1.0f, cam);
 
 	// initalize member vars
 	time_elapsed = 0.f;
@@ -33,6 +33,8 @@ void ofApp::setup() {
 	catch (...) {
 		cout << "Music file could not be loaded. Ensure bin/data/bg_music.mp3 exists." << endl;
 	}
+
+	gameOver = false; // game is not over!!!!1!111!
 }
 
 
@@ -41,15 +43,54 @@ void ofApp::update() {
 
 	float delta_time = ofGetLastFrameTime();
 
-	player->update(delta_time);
-
-	for (int i = 0; i < opposition_vec.size(); ++i) {
-		EnemyGameObject* enemy = opposition_vec[i];
-		enemy->faceTowards(player->getPosition());
-		enemy->update(delta_time);
+	// game over
+	if (gameOver) {
+		// cout << "GAME OVER" << endl;
+		if (gameOverTimer.Finished()) {
+			ofExit();
+		}
 	}
 
-	time_elapsed += ofGetLastFrameTime();
+	// game not over
+	else {
+		// check if player should be able to be hit
+		if (player->getInvincibilityTimer().FinishedAndStop()) {
+			player->setColour(glm::vec3(255.0f));
+		}
+
+		player->update(delta_time);
+
+		// updates for opps
+		for (int i = 0; i < opposition_vec.size(); ++i) {
+			EnemyGameObject* enemy = opposition_vec[i];
+			enemy->faceTowards(player->getPosition());
+			enemy->update(delta_time);
+
+			// check for collisions between an enemy and the player
+			float dist = glm::distance(player->getPosition(), enemy->getPosition());
+			if (dist <= player->getRadius() + enemy->getRadius() && !player->getInvincibilityTimer().IsRunning()) {
+				// cout << "Collision" << endl;
+				player->setHealth(player->getHealth() - 1);
+
+				delete enemy;
+				opposition_vec.erase(opposition_vec.begin() + i);
+
+				player->getInvincibilityTimer().Start(2.0f); // start timer where the player cannot be hit
+				player->setColour(glm::vec3(255.0f, 0.0f, 50.0f)); // set colour to show that player has been hit
+				// cout << "Health: " << player->getHealth() << endl;
+
+				// trigger game over
+				if (player->getHealth() <= 0) {
+					gameOver = true;
+					gameOverTimer.Start(5.0f);
+					break;
+				}
+			}
+
+		}
+
+		time_elapsed += ofGetLastFrameTime();
+	}
 }
 
 //--------------------------------------------------------------
@@ -72,10 +113,16 @@ void ofApp::draw() {
 	player->getCamera().end();
 	ofDisableDepthTest();
 
-	// reset color, draw HUD elements
+	// reset colour, draw HUD elements
 	ofSetColor(255, 255, 255);
 	ofDrawBitmapString("Time Elapsed: " + ofToString(time_elapsed), ofGetWidth() - 160, 30);
+	ofDrawBitmapString("Player Health: " + ofToString(player->getHealth()), ofGetWidth() - 130, 70);
+	ofDrawBitmapString("Player Scale: " + ofToString(player->getScale(), 2), ofGetWidth() - 145, 50);
 
+	// game over text
+	if (gameOver) {
+		ofDrawBitmapString("GAME OVER, OPPS CAUGHT U LACKIN TWIN!! ", ofGetWidth()/2 - 160, ofGetHeight()/2);
+	}
 }
 
 //--------------------------------------------------------------

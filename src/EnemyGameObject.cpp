@@ -3,8 +3,9 @@
 // constructor, does the same shit as the base class, however might need a different mesh down the road so yeah
 EnemyGameObject::EnemyGameObject(const glm::vec3& position, float scale) 
 	: GameObject(position, scale) {
-	mesh = ofMesh::sphere(15);
-	color = glm::vec3(200.f, 100.f, 80.f);
+	radius = 15;
+	mesh = ofMesh::sphere(radius);
+	colour = glm::vec3(200.f, 100.f, 80.f);
 }
 
 
@@ -33,15 +34,13 @@ void EnemyGameObject::faceTowards(const glm::vec3& point_to_face) {
 	}
 }
 
-// draw with appropriate scale, position, color, and mesh
+// draw with appropriate scale, position, colour, and mesh
 void EnemyGameObject::draw(void) {
 	ofPushMatrix();
 
-	ofScale(this->getScale(), this->getScale(), this->getScale());
-
 	ofTranslate(position);
 
-	ofSetColor(color[0], color[1], color[2]);
+	ofSetColor(colour[0], colour[1], colour[2]);
 
 	mesh.draw();
 

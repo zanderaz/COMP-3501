@@ -48,20 +48,15 @@ void MyCustomCamera::update(float deltaTime) {
     */
 }
 
-// TODO: getqForward, getqSide, getqUp;
-// TODO: pitch, yaw, roll
-
 void MyCustomCamera::pitch(float amt) {
     glm::quat change = glm::angleAxis(amt, glm::vec3(1,0,0));
     orientation = orientation*change; // this is where q1 * q2 comes in
 }
 
-
 void MyCustomCamera::yaw(float amt) {
     glm::quat change = glm::angleAxis(amt, glm::vec3(0,1,0));
     orientation = orientation*change;
 }
-
 
 void MyCustomCamera::roll(float amt) {
     glm::quat change = glm::angleAxis(amt, glm::vec3(0,0,1));

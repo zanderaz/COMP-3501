@@ -5,6 +5,7 @@
 #include "GameObject.h"
 #include "PlayerGameObject.h"
 #include "EnemyGameObject.h"
+#include "timer.h"
 
 class ofApp : public ofBaseApp {
 
@@ -41,4 +42,8 @@ class ofApp : public ofBaseApp {
 
 		// sound
 		ofSoundPlayer background_music;
+
+		// game over stuffs
+		bool gameOver;
+		Timer gameOverTimer;
 };
