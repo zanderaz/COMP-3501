@@ -5,32 +5,67 @@ PlayerGameObject::PlayerGameObject(const glm::vec3& position, float scale, float
 	velocity = glm::vec3(0);
     speed = 0.0f;
     maxSpeed = 400.0f;
-	mesh = ofMesh::sphere(25);
+    initRadius = 25;
+    radius = initRadius;
+    minRadius = 15;
+    maxRadius = 40;
+    health = 3;
+	mesh = ofMesh::sphere(initRadius);
 }
 
 void PlayerGameObject::update(float deltaTime) {
-    // glm::vec3 move(0.0f);
+    // shrinking/growing
+    sizeChangeTimer.FinishedAndStop();
 
-    /*
-    if (ofGetKeyPressed('a')) move -= getqSide();
-    if (ofGetKeyPressed('d')) move += getqSide();
-    if (ofGetKeyPressed('q')) move += getqUp();
-    if (ofGetKeyPressed('e')) move -= getqUp();
-    */
+    if (ofGetKeyPressed('q') && !sizeChangeTimer.IsRunning()) { // shrink
+        if (radius - 5 >= minRadius) {
+            changeSize(-5);
+            if (speed >= 400.0f) {
+                maxSpeed -= 200;
+            }
+            rotationSpeed += 0.15;
+            // cout << radius << endl;
+            sizeChangeTimer.Start(0.25f); // delay so you cant spam it
+        }
+    }
 
-    // 
+    if (ofGetKeyPressed('e') && !sizeChangeTimer.IsRunning()) { // grow
+        if (radius + 5 <= maxRadius) {
+            changeSize(5);
+            maxSpeed += 200;
+            if (rotationSpeed >= 1.0f) {
+                rotationSpeed -= 0.25;
+            }
+            // cout << radius << endl;
+            sizeChangeTimer.Start(0.25f); // delay so you cant spam it
+        }
+    }
+
+    scale = radius / initRadius;
+
+    // w to accel up to max speed, s to deccel down to 0 (affected by size)
+    float speedMult;
+
+    // if current radius bigger than initial radius, multiply speed by radius/initRadius
+    if (radius < initRadius) {
+        speedMult = 1;
+    }
+    else {
+        speedMult = 2 * (radius / initRadius);
+    }
     if (ofGetKeyPressed('w')) {
-        speed += acceleration * deltaTime; // accelerate
+        speed += acceleration * speedMult * deltaTime;
         if (speed > maxSpeed) speed = maxSpeed;
     }
     if (ofGetKeyPressed('s')) {
-        speed -= acceleration * deltaTime; // decelerate
+        speed -= acceleration * speedMult * deltaTime;
         if (speed < 0.0f) speed = 0.0f;
     }
 
-    glm::vec3 forward = getqForward(); // unit forward vector from orientation
+    // update position
     position += getqForward() * speed * deltaTime;
 
+    // rotation
     float rotationamt = rotationSpeed * deltaTime;
     if (ofGetKeyPressed('i')) pitch(rotationamt);
     if (ofGetKeyPressed('k')) pitch(-rotationamt);
@@ -40,31 +75,37 @@ void PlayerGameObject::update(float deltaTime) {
     if (ofGetKeyPressed('o')) roll(-rotationamt);
     if (ofGetKeyPressed('y')) orientation = glm::quat(1, 0, 0, 0);
 
+    // make sure to normalize quaternion
     orientation = glm::normalize(orientation);
 
     // apply transform
     setPosition(position);
     setOrientation(orientation);
 
-    // make camera follow
-    cam.setPosition(position - getqForward() * 150.0f + getqUp() * 40.0f); // camera offset
+    // third person camera follow (saved in case we need later and for testing)
+    cam.setPosition(position - getqForward() * 150.0f + getqUp() * 40.0f);
+
+    // camera position
+    cam.setPosition(position - getqForward() * 150.0f + getqUp() * 40.0f); // third person camera follow (saved in case we need later and for testing)
+    // cam.setPosition(position);
     cam.setOrientation(orientation);
 }
 
+// draw method (first person so really not used right now)
 void PlayerGameObject::draw() {
 	ofPushMatrix();
-    ofScale(this->getScale(), this->getScale(), this->getScale());
 	ofTranslate(position);
+    ofSetColor(colour[0], colour[1], colour[2]);
 	mesh.draw();
 	ofPopMatrix();
 }
 
+// rotation methods
 void PlayerGameObject::pitch(float amt) {
 	glm::quat change = glm::angleAxis(amt, glm::vec3(1, 0, 0));
 	orientation = orientation * change;
 
 }
-
 
 void PlayerGameObject::yaw(float amt) {
 	glm::quat change = glm::angleAxis(amt, glm::vec3(0, 1, 0));
@@ -72,8 +113,12 @@ void PlayerGameObject::yaw(float amt) {
 
 }
 
-
 void PlayerGameObject::roll(float amt) {
 	glm::quat change = glm::angleAxis(amt, glm::vec3(0, 0, 1));
 	orientation = orientation * change;
+}
+
+void PlayerGameObject::changeSize(float factor) {
+    radius += factor;
+    mesh = ofMesh::sphere(radius);
 }

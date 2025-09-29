@@ -12,11 +12,13 @@ public:
 	inline const float getAngle() const { return angle; }
 	inline const glm::quat& getOrientation() const { return orientation; }
 	inline const ofMesh& getMesh() const { return mesh; }
+	inline const glm::vec3& getColour() const { return colour; }
 	inline void setPosition(const glm::vec3& pos) { position = pos; }
 	inline void setScale(float s) { scale = s; }
 	inline void setAngle(float a) { angle = a; }
 	inline void setOrientation(const glm::quat& q) { orientation = q; }
 	inline void setMesh(const ofMesh& m) { mesh = m; }
+	inline void setColour(const glm::vec3& c) { colour = c; }
 	
 	virtual void draw() {}
 	virtual void update(float deltaTime) {}
@@ -28,7 +30,7 @@ protected:
 	float scale;
 	float angle;
 	glm::vec3 position;
-	glm::vec3 color;
+	glm::vec3 colour;
 	glm::quat orientation;
 	ofMesh mesh;
 	glm::vec3 BASE_SIDE = glm::vec3(1, 0, 0);
