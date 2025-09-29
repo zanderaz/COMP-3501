@@ -23,6 +23,12 @@ void ofApp::setup() {
 	opposition_vec.push_back(new EnemyGameObject(glm::vec3(99.f, 0.f, 99.f), 1.f));
 	opposition_vec.push_back(new EnemyGameObject(glm::vec3(-99.f, 0.f, 99.f), 1.f));
 
+	checkpoint_vec.push_back(new CheckpointGameObject(glm::vec3(0.f, 0.f, -400.f), 1.f));
+	checkpoint_vec.push_back(new CheckpointGameObject(glm::vec3(200.f, -150.f, -700.f), 1.f));
+	checkpoint_vec.push_back(new CheckpointGameObject(glm::vec3(0.f, 0.f, 0.f), 1.f));
+	checkpoint_vec.push_back(new CheckpointGameObject(glm::vec3(0.f, 0.f, 0.f), 1.f));
+	checkpoint_vec.push_back(new CheckpointGameObject(glm::vec3(0.f, 0.f, 0.f), 1.f));
+
 	// setup sound
 	try {
 		background_music.load("bg_music.mp3");
@@ -53,6 +59,13 @@ void ofApp::update() {
 
 	// game not over
 	else {
+
+		float dist = glm::distance(player->getPosition(), checkpoint_vec[0]->getPosition());
+		if (dist <= player->getRadius() + checkpoint_vec[0]->getRadius()) {
+			checkpoint_vec.erase(checkpoint_vec.begin() + 1);
+		}
+
+
 		// check if player should be able to be hit
 		if (player->getInvincibilityTimer().FinishedAndStop()) {
 			player->setColour(glm::vec3(255.0f));
@@ -108,6 +121,9 @@ void ofApp::draw() {
 
 	for (int i = 0; i < opposition_vec.size(); ++i) {
 		opposition_vec[i]->draw();
+	}
+	if (checkpoint_vec.size() > 0) {
+		checkpoint_vec[0]->draw();
 	}
 
 	player->getCamera().end();

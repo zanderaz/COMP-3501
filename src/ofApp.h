@@ -6,6 +6,7 @@
 #include "PlayerGameObject.h"
 #include "EnemyGameObject.h"
 #include "timer.h"
+#include "CheckpointGameObject.h"
 
 class ofApp : public ofBaseApp {
 
@@ -36,6 +37,7 @@ class ofApp : public ofBaseApp {
 		// game object collections
 		PlayerGameObject* player;
 		vector<EnemyGameObject*> opposition_vec;
+		vector<CheckpointGameObject*> checkpoint_vec;
   
 		// track time
 		float time_elapsed;
