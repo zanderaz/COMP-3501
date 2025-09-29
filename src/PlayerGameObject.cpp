@@ -20,9 +20,6 @@ void PlayerGameObject::update(float deltaTime) {
     if (ofGetKeyPressed('q') && !sizeChangeTimer.IsRunning()) { // shrink
         if (radius - 5 >= minRadius) {
             changeSize(-5);
-            if (speed >= 400.0f) {
-                maxSpeed -= 200;
-            }
             rotationSpeed += 0.15;
             // cout << radius << endl;
             sizeChangeTimer.Start(0.25f); // delay so you cant spam it
@@ -32,9 +29,8 @@ void PlayerGameObject::update(float deltaTime) {
     if (ofGetKeyPressed('e') && !sizeChangeTimer.IsRunning()) { // grow
         if (radius + 5 <= maxRadius) {
             changeSize(5);
-            maxSpeed += 200;
             if (rotationSpeed >= 1.0f) {
-                rotationSpeed -= 0.25;
+                rotationSpeed -= 0.15;
             }
             // cout << radius << endl;
             sizeChangeTimer.Start(0.25f); // delay so you cant spam it
@@ -81,9 +77,6 @@ void PlayerGameObject::update(float deltaTime) {
     // apply transform
     setPosition(position);
     setOrientation(orientation);
-
-    // third person camera follow (saved in case we need later and for testing)
-    cam.setPosition(position - getqForward() * 150.0f + getqUp() * 40.0f);
 
     // camera position
     cam.setPosition(position - getqForward() * 150.0f + getqUp() * 40.0f); // third person camera follow (saved in case we need later and for testing)
