@@ -12,7 +12,7 @@ public:
 	void draw() override;
 
 
-
+	
 	inline const float getLength() const { return length; }
 
 	inline void setLength(float len) { length = len; }

@@ -37,7 +37,6 @@ class ofApp : public ofBaseApp {
 		PlayerGameObject* player;
 		vector<EnemyGameObject*> opposition_vec;
 		vector<CheckpointGameObject*> checkpoint_vec;
-		vector<CheckpointGameObject*> precheckpoint;
 		vector<AstroidGameObject*> astroid_vec;
   
 		// track time
