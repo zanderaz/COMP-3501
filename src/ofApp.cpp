@@ -11,10 +11,7 @@ void ofApp::setup() {
 	// setup asteroids
 	asteroids = 200;
 	for (int i = 0; i < asteroids; i++) {
-		body[i].setPosition(glm::vec3(
-				ofRandom(-800,800),
-				ofRandom(-800,800),
-				ofRandom(-800,800)));
+		astroid_vec.push_back(new AstroidGameObject(glm::vec3(ofRandom(-800, 800), ofRandom(-800, 800), ofRandom(-800, 800)), 1.f));
 	}
 
 	// populate the game with opposition objects (placeholder positions, change to beacons later)
@@ -141,8 +138,8 @@ void ofApp::draw() {
 	player->getCamera().begin();
 	ofEnableDepthTest();
 
-	for (int i = 0; i < asteroids; i++) {
-		body[i].draw();
+	for (int i = 0; i < astroid_vec.size(); i++) {
+		astroid_vec[i]->draw();
 	}
 
 	player->draw();

@@ -15,14 +15,14 @@ class CheckpointGameObject : public GameObject {
 
 
 		inline const float getRadius() const { return radius; }
-		inline const int getCheckNum() const { return checkNum; }
+		
 
 		inline void setRadius(float rad) { radius = rad; }
-		inline void setCheckNum(int cNum) { checkNum = cNum; }
+		
 
 	private:
 		float radius;
-		int checkNum;
+		
 
 };
 #endif
