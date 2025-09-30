@@ -25,9 +25,20 @@ void ofApp::setup() {
 
 	checkpoint_vec.push_back(new CheckpointGameObject(glm::vec3(0.f, 0.f, -400.f), 1.f));
 	checkpoint_vec.push_back(new CheckpointGameObject(glm::vec3(200.f, -150.f, -700.f), 1.f));
+	checkpoint_vec.push_back(new CheckpointGameObject(glm::vec3(-400.f, 500.f, 300.f), 1.f));
+	checkpoint_vec.push_back(new CheckpointGameObject(glm::vec3(-200.f, -500.f, -250.f), 1.f));
 	checkpoint_vec.push_back(new CheckpointGameObject(glm::vec3(0.f, 0.f, 0.f), 1.f));
-	checkpoint_vec.push_back(new CheckpointGameObject(glm::vec3(0.f, 0.f, 0.f), 1.f));
-	checkpoint_vec.push_back(new CheckpointGameObject(glm::vec3(0.f, 0.f, 0.f), 1.f));
+
+	precheckpoint.push_back(new CheckpointGameObject(glm::vec3(200.f, -150.f, -700.f), 1.f));
+	precheckpoint.push_back(new CheckpointGameObject(glm::vec3(-400.f, 500.f, 300.f), 1.f));
+	precheckpoint.push_back(new CheckpointGameObject(glm::vec3(-200.f, -500.f, -250.f), 1.f));
+	precheckpoint.push_back(new CheckpointGameObject(glm::vec3(0.f, 0.f, 0.f), 1.f));
+
+	for (int i = 0; i < precheckpoint.size(); i++){
+		precheckpoint[i]->setMesh(ofMesh::cylinder(15, 30, 20, 10, true, 2));
+		precheckpoint[i]->setColour(glm::vec3(100.f, 100.f, 255.f));
+	}
+
 
 	// setup sound
 	try {
@@ -40,7 +51,8 @@ void ofApp::setup() {
 		cout << "Music file could not be loaded. Ensure bin/data/bg_music.mp3 exists." << endl;
 	}
 
-	gameOver = false; // game is not over!!!!1!111!
+	lostGameOver = false; // game is not over!!!!1!111!
+	wonGameOver = false;
 }
 
 
@@ -50,7 +62,13 @@ void ofApp::update() {
 	float delta_time = ofGetLastFrameTime();
 
 	// game over
-	if (gameOver) {
+	if (lostGameOver) {
+		// cout << "GAME OVER" << endl;
+		if (gameOverTimer.Finished()) {
+			ofExit();
+		}
+	}
+	if (wonGameOver) {
 		// cout << "GAME OVER" << endl;
 		if (gameOverTimer.Finished()) {
 			ofExit();
@@ -59,10 +77,20 @@ void ofApp::update() {
 
 	// game not over
 	else {
-
-		float dist = glm::distance(player->getPosition(), checkpoint_vec[0]->getPosition());
-		if (dist <= player->getRadius() + checkpoint_vec[0]->getRadius()) {
-			checkpoint_vec.erase(checkpoint_vec.begin() + 1);
+		if (checkpoint_vec.size() > 0) {
+			float dist = glm::distance(player->getPosition(), checkpoint_vec[0]->getPosition());
+			if (dist <= player->getRadius() + checkpoint_vec[0]->getRadius()) {
+				checkpoint_vec.erase(checkpoint_vec.begin() + 0);
+				if (precheckpoint.size() > 0) {
+					precheckpoint.erase(precheckpoint.begin() + 0);
+				}
+			}
+		}
+		else {
+			if (!wonGameOver) {
+				wonGameOver = true;
+				gameOverTimer.Start(5.0f);
+			}
 		}
 
 
@@ -94,7 +122,7 @@ void ofApp::update() {
 
 				// trigger game over
 				if (player->getHealth() <= 0) {
-					gameOver = true;
+					lostGameOver = true;
 					gameOverTimer.Start(5.0f);
 					break;
 				}
@@ -122,9 +150,16 @@ void ofApp::draw() {
 	for (int i = 0; i < opposition_vec.size(); ++i) {
 		opposition_vec[i]->draw();
 	}
+
 	if (checkpoint_vec.size() > 0) {
 		checkpoint_vec[0]->draw();
 	}
+
+	
+	for (int i = 0; i < precheckpoint.size(); i++) {
+		precheckpoint[i]->draw();
+	}
+	
 
 	player->getCamera().end();
 	ofDisableDepthTest();
@@ -136,8 +171,11 @@ void ofApp::draw() {
 	ofDrawBitmapString("Player Scale: " + ofToString(player->getScale(), 2), ofGetWidth() - 145, 50);
 
 	// game over text
-	if (gameOver) {
+	if (lostGameOver) {
 		ofDrawBitmapString("GAME OVER, OPPS CAUGHT U LACKIN TWIN!! ", ofGetWidth()/2 - 160, ofGetHeight()/2);
+	}
+	if (wonGameOver) {
+		ofDrawBitmapString("GAME OVER, U DID NOT GET CAUGHT LACKING ", ofGetWidth() / 2 - 160, ofGetHeight() / 2);
 	}
 }
 

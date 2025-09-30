@@ -38,6 +38,7 @@ class ofApp : public ofBaseApp {
 		PlayerGameObject* player;
 		vector<EnemyGameObject*> opposition_vec;
 		vector<CheckpointGameObject*> checkpoint_vec;
+		vector<CheckpointGameObject*> precheckpoint;
   
 		// track time
 		float time_elapsed;
@@ -46,6 +47,7 @@ class ofApp : public ofBaseApp {
 		ofSoundPlayer background_music;
 
 		// game over stuffs
-		bool gameOver;
+		bool lostGameOver;
+		bool wonGameOver;
 		Timer gameOverTimer;
 };
