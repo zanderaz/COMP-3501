@@ -17,7 +17,8 @@ public:
 protected:
 
 	// speed constant
-	const float ENEMY_SPEED = 50.0f;
+	const float ENEMY_BASE_SPEED = 75.0f;
+	float enemy_speed;
 	float radius;
 
 };

@@ -6,6 +6,7 @@ EnemyGameObject::EnemyGameObject(const glm::vec3& position, float scale)
 	radius = 15;
 	mesh = ofMesh::sphere(radius);
 	colour = glm::vec3(200.f, 100.f, 80.f);
+	enemy_speed = ENEMY_BASE_SPEED + ofRandom(0, 25.f); // variable speed
 }
 
 
@@ -14,7 +15,7 @@ void EnemyGameObject::update(float dt) {
 	
 	// get forward direction, should point towards the player, then move
 	glm::vec3 forward = orientation * glm::vec3(0.0f, 0.0f, -1.0f);
-	position += forward * ENEMY_SPEED * dt;
+	position += forward * enemy_speed * dt;
 }
 
 void EnemyGameObject::faceTowards(const glm::vec3& point_to_face) {
