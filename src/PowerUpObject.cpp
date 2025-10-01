@@ -5,7 +5,7 @@ PowerUpObject::PowerUpObject(const glm::vec3& position, float scale)
 	: GameObject(position, scale) {
 	radius = 20;
 	mesh = ofMesh::sphere(radius);
-	colour = glm::vec3(80.f, 100.f, 200.f);
+	colour = glm::vec3(10.f, 180.f, 255.f);
 }
 
 // draw with appropriate scale, position, colour, and mesh

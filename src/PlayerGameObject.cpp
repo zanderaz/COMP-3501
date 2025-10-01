@@ -4,7 +4,7 @@ PlayerGameObject::PlayerGameObject(const glm::vec3& position, float scale, float
 	: GameObject(position, scale), acceleration(acceleration), rotationSpeed(rotationSpeed), cam(cam) {
 	velocity = glm::vec3(0);
     speed = 0.0f;
-    maxSpeed = 400.0f;
+    maxSpeed = 250.0f;
     power_up_speed_mult = 1.f;
     initRadius = 25;
     radius = initRadius;
@@ -52,7 +52,7 @@ void PlayerGameObject::update(float deltaTime) {
     }
     if (ofGetKeyPressed('w')) {
         speed += acceleration * speedMult * deltaTime;
-        if (speed > maxSpeed * power_up_speed_mult) speed = maxSpeed;
+        if (speed > maxSpeed * power_up_speed_mult) speed = maxSpeed * power_up_speed_mult;
     }
     if (ofGetKeyPressed('s')) {
         speed -= acceleration * speedMult * deltaTime;
