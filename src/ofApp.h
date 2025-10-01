@@ -5,6 +5,7 @@
 #include "GameObject.h"
 #include "PlayerGameObject.h"
 #include "EnemyGameObject.h"
+#include "PowerUpObject.h"
 #include "timer.h"
 #include "CheckpointGameObject.h"
 #include "AstroidGameObject.h"
@@ -38,6 +39,7 @@ class ofApp : public ofBaseApp {
 		vector<EnemyGameObject*> opposition_vec;
 		vector<CheckpointGameObject*> checkpoint_vec;
 		vector<AstroidGameObject*> astroid_vec;
+		vector<PowerUpObject*> power_up_vec;
   
 		// track time
 		float time_elapsed;
