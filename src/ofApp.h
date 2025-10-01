@@ -7,6 +7,8 @@
 #include "EnemyGameObject.h"
 #include "PowerUpObject.h"
 #include "timer.h"
+#include "CheckpointGameObject.h"
+#include "AstroidGameObject.h"
 
 class ofApp : public ofBaseApp {
 
@@ -29,14 +31,14 @@ class ofApp : public ofBaseApp {
 		void exit(void) override;
 		
 		int asteroids;
-		
-		ofNode body[500];
 
 		MyCustomCamera cam;
 
 		// game object collections
 		PlayerGameObject* player;
 		vector<EnemyGameObject*> opposition_vec;
+		vector<CheckpointGameObject*> checkpoint_vec;
+		vector<AstroidGameObject*> astroid_vec;
 		vector<PowerUpObject*> power_up_vec;
   
 		// track time
@@ -46,6 +48,7 @@ class ofApp : public ofBaseApp {
 		ofSoundPlayer background_music;
 
 		// game over stuffs
-		bool gameOver;
+		bool lostGameOver;
+		bool wonGameOver;
 		Timer gameOverTimer;
 };

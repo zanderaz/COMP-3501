@@ -9,15 +9,13 @@ void ofApp::setup() {
 
 	// initalize member vars
 	time_elapsed = 0.f;
-	gameOver = false;
-
+  lostGameOver = false;
+	wonGameOver = false;
+ 
 	// setup asteroids
 	asteroids = 200;
 	for (int i = 0; i < asteroids; i++) {
-		body[i].setPosition(glm::vec3(
-				ofRandom(-800,800),
-				ofRandom(-800,800),
-				ofRandom(-800,800)));
+		astroid_vec.push_back(new AstroidGameObject(glm::vec3(ofRandom(-800, 800), ofRandom(-800, 800), ofRandom(-800, 800)), 1.f));
 	}
 
 	// populate the game with opposition objects (placeholder positions, change to beacons later)
@@ -32,6 +30,19 @@ void ofApp::setup() {
 	power_up_vec.push_back(new PowerUpObject(glm::vec3(-500.f, 350.f, -500.f), 1.f));
 	power_up_vec.push_back(new PowerUpObject(glm::vec3(450.f, 500.f, -400.f), 1.f));
 
+
+	//creating the checkpoints
+	checkpoint_vec.push_back(new CheckpointGameObject(glm::vec3(0.f, 0.f, -400.f), 1.f));
+	checkpoint_vec.push_back(new CheckpointGameObject(glm::vec3(200.f, -150.f, -700.f), 1.f));
+	checkpoint_vec.push_back(new CheckpointGameObject(glm::vec3(-400.f, 500.f, 300.f), 1.f));
+	checkpoint_vec.push_back(new CheckpointGameObject(glm::vec3(-200.f, -500.f, -250.f), 1.f));
+	checkpoint_vec.push_back(new CheckpointGameObject(glm::vec3(0.f, 0.f, 0.f), 1.f));
+	//make the non current checkpoints a different shape and colour
+	for (int i = 1; i < checkpoint_vec.size(); i++) {
+		checkpoint_vec[i]->setMesh(ofMesh::cylinder(15, 30, 20, 10, true, 2));
+		checkpoint_vec[i]->setColour(glm::vec3(100.f, 100.f, 255.f));
+	}
+
 	// setup sound
 	try {
 		background_music.load("bg_music.mp3");
@@ -42,6 +53,7 @@ void ofApp::setup() {
 	catch (...) {
 		cout << "Music file could not be loaded. Ensure bin/data/bg_music.mp3 exists." << endl;
 	}
+
 }
 
 
@@ -51,7 +63,13 @@ void ofApp::update() {
 	float delta_time = ofGetLastFrameTime();
 
 	// game over
-	if (gameOver) {
+	if (lostGameOver) {
+		// cout << "GAME OVER" << endl;
+		if (gameOverTimer.Finished()) {
+			ofExit();
+		}
+	}
+	if (wonGameOver) {
 		// cout << "GAME OVER" << endl;
 		if (gameOverTimer.Finished()) {
 			ofExit();
@@ -60,6 +78,25 @@ void ofApp::update() {
 
 	// game not over
 	else {
+
+		//see if they collected the checkpoint make it dissapear and change the next checkpoint to the correct shape and colour
+		if (checkpoint_vec.size() > 0) {
+			float dist = glm::distance(player->getPosition(), checkpoint_vec[0]->getPosition());
+			if (dist <= player->getRadius() + checkpoint_vec[0]->getRadius()) {
+				checkpoint_vec.erase(checkpoint_vec.begin() + 0);
+				if (checkpoint_vec.size() > 0) {
+					checkpoint_vec[0]->setMesh(ofMesh::sphere(15));
+					checkpoint_vec[0]->setColour(glm::vec3(100.f, 255.f, 80.f));
+				}
+			}
+		}
+		//if the user won
+		else {
+			if (!wonGameOver) {
+				wonGameOver = true;
+				gameOverTimer.Start(5.0f);
+			}
+		}
 
 		// check if player should be able to be hit
 		if (player->getInvincibilityTimer().FinishedAndStop()) {
@@ -89,12 +126,27 @@ void ofApp::update() {
 
 				// trigger game over
 				if (player->getHealth() <= 0) {
-					gameOver = true;
+					lostGameOver = true;
 					gameOverTimer.Start(5.0f);
 					break;
 				}
 			}
 
+		}
+		//have the astroids damage the player when they collide with it (has same logic when collide with enemy)
+		for (int i = 0; i < astroid_vec.size(); i++) {
+			float dist = glm::distance(player->getPosition(), astroid_vec[i]->getPosition());
+			if (dist <= player->getRadius() + (astroid_vec[i]->getLength()/2) && !player->getInvincibilityTimer().IsRunning()) {
+				player->setHealth(player->getHealth() - 1);
+				player->getInvincibilityTimer().Start(2.0f); // start timer where the player cannot be hit
+				player->setColour(glm::vec3(255.0f, 0.0f, 50.0f)); // set colour to show that player has been hit
+				
+				if (player->getHealth() <= 0) {
+					lostGameOver = true;
+					gameOverTimer.Start(5.0f);
+					break;
+				}
+			}
 		}
 
 		// updates for power ups
@@ -123,8 +175,9 @@ void ofApp::draw() {
 	player->getCamera().begin();
 	ofEnableDepthTest();
 
-	for (int i = 0; i < asteroids; i++) {
-		body[i].draw();
+	//draw the astroids
+	for (int i = 0; i < astroid_vec.size(); i++) {
+		astroid_vec[i]->draw();
 	}
 	player->draw();
 	for (int i = 0; i < opposition_vec.size(); ++i) {
@@ -133,6 +186,13 @@ void ofApp::draw() {
 	for (int i = 0; i < power_up_vec.size(); ++i) {
 		power_up_vec[i]->draw();
 	}
+
+	//draw all checkpoints
+	for (int i = 0; i < checkpoint_vec.size(); i++) {
+		checkpoint_vec[i]->draw();
+	}
+
+	
 
 	player->getCamera().end();
 	ofDisableDepthTest();
@@ -144,8 +204,11 @@ void ofApp::draw() {
 	ofDrawBitmapString("Player Scale: " + ofToString(player->getScale(), 2), ofGetWidth() - 145, 50);
 
 	// game over text
-	if (gameOver) {
+	if (lostGameOver) {
 		ofDrawBitmapString("GAME OVER, OPPS CAUGHT U LACKIN TWIN!! ", ofGetWidth()/2 - 160, ofGetHeight()/2);
+	}
+	if (wonGameOver) {
+		ofDrawBitmapString("GAME OVER, U DID NOT GET CAUGHT LACKING ", ofGetWidth() / 2 - 160, ofGetHeight() / 2);
 	}
 }
 
