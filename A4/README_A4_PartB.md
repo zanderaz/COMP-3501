@@ -2,7 +2,7 @@
 ### By Aidan, Evan, Zander
 
 ### Design
-This code is designed to draw a bone-marrow type of geometry. The l-system code provided on the brightspace was redesigned, adapted and used to create a string that will create a unique shape and also incorporates 3D 'movements'. This will be potentially adapted and improved for our final project.
+This code is designed to draw a geometry designed to look like veins or something anatomical like that. The l-system code provided on the brightspace was redesigned, adapted and used to create a string that will create a unique shape and also incorporates 3D 'movements'. This will be potentially adapted and improved for our final project.
 
 ### Build Instructions
 1. Download your .zip file from Brightspace.
