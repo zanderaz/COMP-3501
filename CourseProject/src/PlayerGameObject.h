@@ -6,14 +6,16 @@
 #include "GameObject.h"
 #include "MyCustomCamera.h"
 #include "timer.h"
-class PlayerGameObject : public GameObject
-{
+
+class PlayerGameObject : public GameObject {
+
 public:
-	PlayerGameObject(const glm::vec3& position, float scale, float acceleration, float rotationSpeed, MyCustomCamera cam);
+
+	PlayerGameObject(const ofMesh& mesh, const glm::vec3& position, float scale, MyCustomCamera cam);
 
 	// getters
-	inline const glm::vec3& getVelocity() const { return velocity; }
 	inline const float getRadius() const { return radius; }
+	inline const glm::vec3& getVelocity() const { return velocity; }
 	inline const int getHealth() const { return health; }
 	inline MyCustomCamera& getCamera() { return cam; }
 	inline Timer& getInvincibilityTimer() { return invincibilityTimer; }
@@ -23,35 +25,34 @@ public:
 	inline void setVelocity(const glm::vec3& vel) { velocity = vel; }
 	inline void setHealth(int h) { health = h; }
 	
+	// render and logic
 	void draw() override;
-	void update(float deltaTime) override;
-	void powerUpSpeedIncrease(void);
+	void update(float delta_time) override;
 
-	// rotation
+	// rotation and movement
 	void roll(float amt);
 	void yaw(float amt);
-	void pitch(float amt);	
-
-	// shrink/grow
-	void changeSize(float factor);
-
-
+	void pitch(float amt);
+	void enforceUpright(void);
 
 protected:
-	float acceleration;
-	float rotationSpeed;
-	float speed;
-	float maxSpeed;
-	float power_up_speed_mult;
+
+	// motion params
+	glm::vec3 velocity;
+	float h_accel;
+	float h_drag;
+	float h_max_speed;
+	float v_accel;
+	float v_drag;
+	float v_max_speed;
+	float gravity;
+
+	// other
 	float radius;
-	float initRadius;
-	float maxRadius;
-	float minRadius;
 	int health;
-	Timer sizeChangeTimer;
 	Timer invincibilityTimer;
-	glm::vec3 velocity; // unused rn
 	MyCustomCamera cam;
+
 };
 #endif
 

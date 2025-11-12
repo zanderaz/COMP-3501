@@ -7,7 +7,7 @@ class EnemyGameObject : public GameObject {
 
 public:
 
-	EnemyGameObject(const glm::vec3& position, float scale);
+	EnemyGameObject(const ofMesh& mesh, const glm::vec3& position, float scale);
 	inline const float getRadius() const { return radius; }
 	inline void setRadius(float r) { radius = r; }
 	void update(float deltaTime) override;

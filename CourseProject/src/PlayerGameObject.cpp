@@ -1,123 +1,146 @@
 #include "PlayerGameObject.h"
 
-PlayerGameObject::PlayerGameObject(const glm::vec3& position, float scale, float acceleration, float rotationSpeed, MyCustomCamera cam)
-	: GameObject(position, scale), acceleration(acceleration), rotationSpeed(rotationSpeed), cam(cam) {
+
+/*** Constructor ***/
+PlayerGameObject::PlayerGameObject(const ofMesh& mesh, const glm::vec3& position, float scale, MyCustomCamera cam)
+	: GameObject(mesh, position, scale), cam(cam) {
+
+    // initialize motion params
 	velocity = glm::vec3(0);
-    speed = 0.0f;
-    maxSpeed = 150.0f;
-    power_up_speed_mult = 1.f;
-    initRadius = 25;
-    radius = initRadius;
-    minRadius = 15;
-    maxRadius = 40;
+    h_accel = 500.f;
+    h_drag = 1.5f;
+    h_max_speed = 250.f;
+    v_accel = 300.f;
+    v_drag = 0.5f;
+    v_max_speed = 200.f;
+    gravity = 250.f;
+
+    // initialize other params
+    radius = 5; // only needed for collision purposess now
     health = 3;
-	mesh = ofMesh::sphere(initRadius);
 }
 
-void PlayerGameObject::update(float deltaTime) {
-    // shrinking/growing
-    sizeChangeTimer.FinishedAndStop();
 
-    if (ofGetKeyPressed('q') && !sizeChangeTimer.IsRunning()) { // shrink
-        if (radius - 5 >= minRadius) {
-            changeSize(-5);
-            rotationSpeed += 0.15;
-            // cout << radius << endl;
-            sizeChangeTimer.Start(0.25f); // delay so you cant spam it
-        }
+/*** Update the player ***/
+void PlayerGameObject::update(float delta_time) {
+
+    // define foward and side vectors, remove y component
+    glm::vec3 forward = getqForward();
+    glm::vec3 side = getqSide();
+    forward.y = 0.0f; side.y = 0.0f;
+
+    if (glm::length2(forward) > 0.0001) {
+        forward = glm::normalize(forward);
+    }
+    if (glm::length2(side) > 0.0001) {
+        side = glm::normalize(side);
     }
 
-    if (ofGetKeyPressed('e') && !sizeChangeTimer.IsRunning()) { // grow
-        if (radius + 5 <= maxRadius) {
-            changeSize(5);
-            if (rotationSpeed >= 1.0f) {
-                rotationSpeed -= 0.15;
-            }
-            // cout << radius << endl;
-            sizeChangeTimer.Start(0.25f); // delay so you cant spam it
-        }
-    }
-
-    scale = radius / initRadius;
-
-    // w to accel up to max speed, s to deccel down to 0 (affected by size)
-    float speedMult;
-
-    // if current radius bigger than initial radius, multiply speed by radius/initRadius
-    if (radius < initRadius) {
-        speedMult = 1;
-    }
-    else {
-        speedMult = 2 * (radius / initRadius);
-    }
+    // handle horizontal direction of acceleration
+    glm::vec3 accelDir(0);
     if (ofGetKeyPressed('w')) {
-        speed += acceleration * speedMult * deltaTime;
-        if (speed > maxSpeed * power_up_speed_mult) speed = maxSpeed * power_up_speed_mult;
+        accelDir += forward; // foward
+    }
+    if (ofGetKeyPressed('a')) {
+        accelDir -= side; // left
     }
     if (ofGetKeyPressed('s')) {
-        speed -= acceleration * speedMult * deltaTime;
-        if (speed < 0.0f) speed = 0.0f;
+        accelDir -= forward; // backward
+    }
+    if (ofGetKeyPressed('d')) {
+        accelDir += side; // right
     }
 
-    // update position
-    position += getqForward() * speed * deltaTime;
+    // normalize if there is input, push x and z components to velocity
+    if (glm::length2(accelDir) > 0.0001) {
+        accelDir = glm::normalize(accelDir);
+        velocity.x += accelDir.x * h_accel * delta_time;
+        velocity.z += accelDir.z * h_accel * delta_time;
+    }
 
-    // rotation
-    float rotationamt = rotationSpeed * deltaTime;
-    if (ofGetKeyPressed('i')) pitch(rotationamt);
-    if (ofGetKeyPressed('k')) pitch(-rotationamt);
-    if (ofGetKeyPressed('j')) yaw(rotationamt);
-    if (ofGetKeyPressed('l')) yaw(-rotationamt);
-    if (ofGetKeyPressed('u')) roll(rotationamt);
-    if (ofGetKeyPressed('o')) roll(-rotationamt);
-    if (ofGetKeyPressed('y')) orientation = glm::quat(1, 0, 0, 0);
+    // handle vertical direction of acceleration 
+    if (ofGetKeyPressed(' ')) {
+        velocity.y += v_accel * delta_time;
+    }
+    else {
+        velocity.y -= gravity * delta_time;
+    }
 
-    // make sure to normalize quaternion
-    orientation = glm::normalize(orientation);
+    // apply air drag
+    velocity.x -= velocity.x * h_drag * delta_time;
+    velocity.z -= velocity.z * h_drag * delta_time;
+    velocity.y -= velocity.y * v_drag * delta_time;
 
-    // apply transform
+    // prevent going over speed limits
+    glm::vec2 hz(velocity.x, velocity.z);
+    float hz_len = glm::length(hz);
+    if (hz_len > h_max_speed) {
+        hz = (hz / hz_len) * h_max_speed;
+        velocity.x = hz.x; velocity.z = hz.y;
+    }
+    velocity.y = glm::clamp(velocity.y, -v_max_speed, v_max_speed);
+
+    // apply velocity to position
+    position += velocity * delta_time;
+
+    // keep the player upright (remove roll) every frame
+    enforceUpright();
     setPosition(position);
     setOrientation(orientation);
 
     // camera position
-    cam.setPosition(position - getqForward() * 150.0f + getqUp() * 40.0f); // third person camera follow (saved in case we need later and for testing)
-    // cam.setPosition(position);
+    cam.setPosition(position);
     cam.setOrientation(orientation);
 }
 
-// increase the power-up speed multiplier
-void PlayerGameObject::powerUpSpeedIncrease() {
-    power_up_speed_mult += 0.25f;
-}
 
-// draw method (first person so really not used right now)
-void PlayerGameObject::draw() {
-	ofPushMatrix();
-	ofTranslate(position);
-    ofSetColor(colour[0], colour[1], colour[2]);
-	mesh.draw();
-	ofPopMatrix();
-}
+/*** Draw the player (empty for 1st person) ***/
+void PlayerGameObject::draw() {}
 
-// rotation methods
+
+/*** Rotation methods ***/
 void PlayerGameObject::pitch(float amt) {
 	glm::quat change = glm::angleAxis(amt, glm::vec3(1, 0, 0));
 	orientation = orientation * change;
 
 }
-
 void PlayerGameObject::yaw(float amt) {
 	glm::quat change = glm::angleAxis(amt, glm::vec3(0, 1, 0));
 	orientation = orientation * change;
 
 }
-
 void PlayerGameObject::roll(float amt) {
 	glm::quat change = glm::angleAxis(amt, glm::vec3(0, 0, 1));
 	orientation = orientation * change;
 }
 
-void PlayerGameObject::changeSize(float factor) {
-    radius += factor;
-    mesh = ofMesh::sphere(radius);
+
+/*** Make sure the player ***/
+void PlayerGameObject::enforceUpright() {
+    const glm::vec3 worldUp(0, 1, 0);
+
+    // get foward vector
+    glm::vec3 f = getqForward();
+    if (glm::length2(f) < 1e-8f) return;
+    f = glm::normalize(f);
+
+    // get right vector
+    glm::vec3 r = glm::cross(f, worldUp);
+
+    // handle the case of a near-vertical forward vector, with a stable fallback
+    if (glm::length2(r) < 1e-8f) {
+        r = glm::normalize(glm::cross(f, glm::vec3(0, 0, 1)));
+        if (glm::length2(r) < 1e-8f) r = glm::vec3(1, 0, 0);
+    }
+    else {
+        r = glm::normalize(r);
+    }
+
+    // get up vector
+    glm::vec3 u = glm::normalize(glm::cross(r, f));
+
+    // create rotation matrix and cast to quaternion (becomes our new orientation)
+    glm::mat3 M(r, u, -f);
+    orientation = glm::normalize(glm::quat_cast(M));
+
 }

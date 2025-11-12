@@ -2,7 +2,7 @@
 
 #include "timer.h"
 
-	/*** Constructor, initializes everything to default values ***/
+/*** Constructor, initializes everything to default values ***/
 Timer::Timer(void) : start_time_(0.0), end_time_(0.0), running_(false) {}
 
 
