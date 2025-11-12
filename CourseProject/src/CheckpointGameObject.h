@@ -8,7 +8,7 @@ class CheckpointGameObject : public GameObject {
 
 	public:
 
-		CheckpointGameObject(const glm::vec3& Position, float scale);
+		CheckpointGameObject(const ofMesh& mesh, const glm::vec3& Position, float scale);
 		void draw() override;
 		inline const float getRadius() const { return radius; }
 		inline void setRadius(float rad) { radius = rad; }

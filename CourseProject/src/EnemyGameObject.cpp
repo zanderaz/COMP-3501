@@ -1,10 +1,9 @@
 #include "EnemyGameObject.h"
 
 // constructor, does the same shit as the base class, however might need a different mesh down the road so yeah
-EnemyGameObject::EnemyGameObject(const glm::vec3& position, float scale) 
-	: GameObject(position, scale) {
+EnemyGameObject::EnemyGameObject(const ofMesh& mesh, const glm::vec3& position, float scale)
+	: GameObject(mesh, position, scale) {
 	radius = 15;
-	mesh = ofMesh::sphere(radius);
 	colour = glm::vec3(200.f, 100.f, 80.f);
 	enemy_speed = ENEMY_BASE_SPEED + ofRandom(0, 25.f); // variable speed
 }
@@ -37,14 +36,6 @@ void EnemyGameObject::faceTowards(const glm::vec3& point_to_face) {
 
 // draw with appropriate scale, position, colour, and mesh
 void EnemyGameObject::draw(void) {
-	ofPushMatrix();
-
-	ofTranslate(position);
-
-	ofSetColor(colour[0], colour[1], colour[2]);
-
-	mesh.draw();
-
-	ofPopMatrix();
+	GameObject::draw();
 }
 

@@ -7,9 +7,9 @@ public:
 
     void update(float deltaTime);
 
-    glm::vec3 getqForward();
-    glm::vec3 getqSide(); 
-    glm::vec3 getqUp();
+    glm::vec3 getqForward() const;
+    glm::vec3 getqSide() const; 
+    glm::vec3 getqUp() const;
 
 
     void pitch(float a);
@@ -17,8 +17,6 @@ public:
     void yaw(float a);
 
 private:
-    float movementSpeed;
-    float rotationSpeed;
     glm::vec3 position;
     glm::quat orientation;
 
