@@ -6,6 +6,37 @@ void ofApp::setup() {
 	// openframework project specific
 	ofSetWindowTitle("Course Project - Triple Sicks");
 	ofSetFrameRate(120);
+	
+	// init shaders
+	lightingShader = new ofShader();
+	skyBoxShader = new ofShader();
+
+	lightingShader->load("shader/lighting");
+	skyBoxShader->load("shader/skyBox");
+
+	// test (sphere not in a game obj)
+	sphere.setPosition(-150, 0, 10);
+	skySphere.setRadius(1000);
+	skySphere.setResolution(5);
+
+	orbitRadius = 400;
+	orbitSpeed = 0.3;
+	orbitAngle = 0;
+
+	// load textures
+	ofDisableArbTex();
+	texture.load("images/DOG.png");
+	skyTexture.load("images/DOG.png");
+
+	if (!lightingShader->isLoaded()) {
+		ofLogError() << "Lighting Shader failed to load!";
+		ofExit();
+	}
+
+	if (!skyBoxShader->isLoaded()) {
+		ofLogError() << "Skybox shader Shader failed to load!";
+		ofExit();
+	}
 
 	// initalize member vars
 	time_elapsed = 0.f;
@@ -51,6 +82,9 @@ void ofApp::setup() {
 	power_up_vec.push_back(new PowerUpObject(power_up_mesh.getMesh(), glm::vec3(0, 0, 200), 1.f));
 	power_up_vec.push_back(new PowerUpObject(power_up_mesh.getMesh(), glm::vec3(0, 0, -200), 1.f));
 
+	// test
+	// opposition_vec.push_back(new EnemyGameObject(power_up_mesh.getMesh(), glm::vec3(500, -200, 0), 1.f));
+
 	// setup sound
 	try {
 		background_music.load("bg_music.mp3");
@@ -71,6 +105,9 @@ void ofApp::update() {
 	// increment time
 	float delta_time = ofGetLastFrameTime();
 	time_elapsed += delta_time;
+
+	// test (light source)
+	orbitAngle += orbitSpeed * ofGetLastFrameTime();
 
 	/*** PLAYER HANDLING ***/
 
@@ -102,29 +139,115 @@ void ofApp::update() {
 			opposition_vec.erase(opposition_vec.begin() + i);
 		}
 	}
+
+	//test (make objects move for visualization and testing model/world matrix)
+	/*
+	for (int i = 0; i < power_up_vec.size(); i++) {
+		glm::vec3 dir (1, 0, 0);
+		dir += 10*delta_time;
+		power_up_vec[i]->setPosition(power_up_vec[i]->getPosition() + dir);
+	}
+	*/
 }
 
 //--------------------------------------------------------------
 void ofApp::draw() {
 
 	// draw world coordinate objects
-	player->getCamera().begin();
 	ofEnableDepthTest();
 
-	player->draw();
+	player->getCamera().begin();
+
+	// test (skybox)
+	skyBoxShader->begin();
+	skyBoxShader->setUniformTexture("skyTexture", skyTexture, 0);
+	skyBoxShader->setUniformMatrix4f("viewMatrix", player->getCamera().getModelViewMatrix());
+	skyBoxShader->setUniformMatrix4f("projectionMatrix", player->getCamera().getProjectionMatrix());
+	skyBoxShader->setUniformMatrix4f("modelViewProjectionMatrix", player->getCamera().getModelViewProjectionMatrix());
+	
+	// draw skybox
+	ofPushMatrix();
+	ofScale(1, 1, 1);
+	skySphere.draw();
+	ofPopMatrix();
+
+	skyBoxShader->end();
+
+	glDepthMask(GL_TRUE);
+
+	ofSetColor(ofColor::sandyBrown);
+
+	lightingShader->begin();
+
+	if (bUseTexture) {
+		lightingShader->setUniform1i("useTexture", 1);
+		lightingShader->setUniformTexture("tex0", texture, 0);
+	}
+	else {
+		lightingShader->setUniform1i("useTexture", 0);
+	}
+	sphere.setPosition(-50, 300, 10);
+
+	lightingShader->setUniformMatrix4f("viewMatrix", player->getCamera().getModelViewMatrix());
+	lightingShader->setUniformMatrix4f("modelViewProjectionMatrix", player->getCamera().getModelViewProjectionMatrix());
+	lightingShader->setUniformMatrix4f("projectionMatrix", player->getCamera().getProjectionMatrix());
+	lightingShader->setUniformMatrix4f("worldMatrix", sphere.getGlobalTransformMatrix());
+
+	lightingShader->setUniform1i("isLight", false);
+	lightingShader->setUniform3f("emissionColor", glm::vec3(0.0));
+
+	//glm::mat4 view = player->getCamera().getModelViewMatrix();
+	glm::vec3 lightPos(100, 420, 100);
+
+	lightPos.x = 100 + (orbitRadius * cos(orbitAngle));
+	lightPos.z = 100 + (orbitRadius * sin(orbitAngle));
+	lightSphere.setPosition(lightPos);
+	//glm::vec3 viewLight = glm::vec3(view * glm::vec4(lightPos, 1.0));
+
+	glm::vec3 camPos = player->getCamera().getPosition();
+	//glm::vec3 viewCam = glm::vec3(view * glm::vec4(camPos, 1.0));
+
+	//lightingShader->setUniform3f("lightPos", viewLight);
+	//lightingShader->setUniform3f("viewPos", viewCam);
+
+
+	lightingShader->setUniform3f("lightPos", lightPos);
+	lightingShader->setUniform3f("viewPos", camPos);
+
+	lightingShader->setUniform3f("lightColor", glm::vec3(1, 1, 1));
+
+	lightingShader->setUniform3f("objectColor", glm::vec3(0.6, 0.6, 0.9));
+	lightingShader->setUniform1i("specularPower", 128);
+
+	sphere.getMesh().draw();
+
+	lightingShader->setUniform1i("isLight", true);
+	lightingShader->setUniform3f("objectColor", glm::vec3(1.0, 0.9, 0.2));
+	lightingShader->setUniform3f("emissionColor", glm::vec3(1, 1, 0.4));
+	lightingShader->setUniformMatrix4f("worldMatrix", lightSphere.getGlobalTransformMatrix());
+	lightSphere.draw();
+
+
+	player->draw(lightingShader);
 	for (int i = 0; i < opposition_vec.size(); ++i) {
-		opposition_vec[i]->draw();
+		opposition_vec[i]->draw(lightingShader);
 	}
 	for (int i = 0; i < power_up_vec.size(); ++i) {
-		power_up_vec[i]->draw();
+		power_up_vec[i]->draw(lightingShader);
 	}
 	for (int i = 0; i < checkpoint_vec.size(); ++i) {
-		checkpoint_vec[i]->draw();
+		checkpoint_vec[i]->draw(lightingShader);
 	}
-	ofSetColor(100, 60, 250);
+
+	//ofSetColor(100, 60, 250);
+	//lightingShader->end();
+	lightingShader->setUniformMatrix4f("worldMatrix", alignment_check.getGlobalTransformMatrix());
+	lightingShader->setUniform3f("objectColor", glm::vec3(0.6, 0.6, 0.9));
 	alignment_check.getMesh().draw();
 
 	ofDisableDepthTest();
+
+	lightingShader->end();
 	player->getCamera().end();
 
 	// reset colour, draw HUD elements
@@ -136,7 +259,9 @@ void ofApp::draw() {
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key) {
-
+	if (key == 't') {
+		bUseTexture = !bUseTexture;
+	}
 }
 
 //--------------------------------------------------------------

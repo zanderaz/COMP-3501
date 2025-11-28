@@ -27,11 +27,12 @@ public:
 	inline void setColour(const glm::vec3& c) { colour = c; }
 	
 	// render and logic specific
-	virtual void draw(void);
+	virtual void draw(ofShader* lightingShader);
 	virtual void update(float deltaTime) {}
 	glm::vec3 getqForward() { return orientation * ((-BASE_FORWARD)); }
 	glm::vec3 getqSide() { return orientation * BASE_SIDE; }
 	glm::vec3 getqUp() { return orientation * BASE_UP; }
+	glm::mat4 getWorldMatrix();
 
 protected:
 

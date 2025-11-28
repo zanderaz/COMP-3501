@@ -95,7 +95,7 @@ void PlayerGameObject::update(float delta_time) {
 
 
 /*** Draw the player (empty for 1st person) ***/
-void PlayerGameObject::draw() {}
+void PlayerGameObject::draw(ofShader* lightingShader) {}
 
 
 /*** Rotation methods ***/
@@ -115,7 +115,7 @@ void PlayerGameObject::roll(float amt) {
 }
 
 
-/*** Make sure the player ***/
+/*** Make sure the player is upright ***/
 void PlayerGameObject::enforceUpright() {
     const glm::vec3 worldUp(0, 1, 0);
 

@@ -4,7 +4,7 @@
 EnemyGameObject::EnemyGameObject(const ofMesh& mesh, const glm::vec3& position, float scale)
 	: GameObject(mesh, position, scale) {
 	radius = 15;
-	colour = glm::vec3(200.f, 100.f, 80.f);
+	colour = glm::vec3(1.0f, 0.5f, 0.5f);
 	enemy_speed = ENEMY_BASE_SPEED + ofRandom(0, 25.f); // variable speed
 }
 
@@ -35,7 +35,7 @@ void EnemyGameObject::faceTowards(const glm::vec3& point_to_face) {
 }
 
 // draw with appropriate scale, position, colour, and mesh
-void EnemyGameObject::draw(void) {
-	GameObject::draw();
+void EnemyGameObject::draw(ofShader* lightingShader) {
+	GameObject::draw(lightingShader);
 }
 

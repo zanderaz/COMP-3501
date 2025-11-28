@@ -26,7 +26,7 @@ public:
 	inline void setHealth(int h) { health = h; }
 	
 	// render and logic
-	void draw() override;
+	void draw(ofShader* lightingShader) override;
 	void update(float delta_time) override;
 
 	// rotation and movement

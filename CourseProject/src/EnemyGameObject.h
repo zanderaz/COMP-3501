@@ -12,7 +12,7 @@ public:
 	inline void setRadius(float r) { radius = r; }
 	void update(float deltaTime) override;
 	void faceTowards(const glm::vec3& point_to_face);
-	void draw() override;
+	void draw(ofShader* lightingShader) override;
 
 protected:
 

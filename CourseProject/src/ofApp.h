@@ -65,4 +65,13 @@ private:
 	ofSpherePrimitive player_mesh;
 	ofPlanePrimitive alignment_check;
 
+	// shader
+	ofShader* lightingShader;
+	ofShader* skyBoxShader;
+
+	// test (objects, orbit for light source, boolean to toggle texture)
+	ofIcoSpherePrimitive sphere, lightSphere, skySphere;
+	ofImage texture, skyTexture;
+	float orbitSpeed, orbitRadius, orbitAngle;
+	bool bUseTexture = true;
 };
