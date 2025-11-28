@@ -1,11 +1,10 @@
 #include "ofApp.h"
 
-//--------------------------------------------------------------
+// Universal game-state setup function
 void ofApp::setup() {
 
 	// openframework project specific
 	ofSetWindowTitle("Course Project - Triple Sicks");
-	ofSetFrameRate(120);
 	
 	// init shaders
 	lightingShader = new ofShader();
@@ -37,28 +36,22 @@ void ofApp::setup() {
 		ofLogError() << "Skybox shader Shader failed to load!";
 		ofExit();
 	}
+	ofSetFrameRate(120); // gets overriden with vsync for whatever reason
+	ofBackground(40);
 
 	// initalize member vars
 	time_elapsed = 0.f;
-	mouse_capture_flag = true;
+	mouse_capture_flag = false;
 	mouse_sensitivity = 0.001f;
 	last_x = 0.0, last_y = 0.0;
 	is_first_mouse = true;
+
+	game_state = 0; // start on main menu
 
 	// camera frustum defaults
 	cam.setNearClip(0.1f);
 	cam.setFarClip(5000.0f);
 	cam.setFov(90.0f);
-
-	// setup mouse capture
-	if (mouse_capture_flag) {
-		setRawMouseCapture(true);
-		// seed lastX/lastY from GLFW
-		if (auto w = getGLFW()) {
-			glfwGetCursorPos(w, &last_x, &last_y);
-			is_first_mouse = false;
-		}
-	}
 
 	// setup meshes
 	power_up_mesh.setRadius(20);
@@ -87,19 +80,66 @@ void ofApp::setup() {
 
 	// setup sound
 	try {
-		background_music.load("bg_music.mp3");
+		background_music.load("sfx/bg_music.mp3");
 		background_music.setLoop(true);
 		background_music.setVolume(0.01f);
-		background_music.play();
 	}
 	catch (...) {
-		cout << "Music file could not be loaded. Ensure bin/data/bg_music.mp3 exists." << endl;
+		ofLogError() << "Music file could not be loaded. Ensure bin/data/bg_music.mp3 exists.";
+	}
+
+	// setup main-menu elements
+	try {
+		menu_button_font.load("fonts/ArialMedium.ttf", 32);
+		menu_title_font.load("fonts/PapyrusBold.ttf", 96);
+		menu_caption_font.load("fonts/ArialMedium.ttf", 14);
+		menu_background.load("images/menu_bg.jpg");
+	}
+	catch (...) {
+		ofLogError() << "Menu elements could not be loaded. Please check bin/data/fonts and bin/data/images.";
+	}
+}
+
+
+// Sets up gameplay specific elements
+void ofApp::setupGameplayGameState(void) {
+
+	ofBackground(80);
+	background_music.play();
+
+	// mouse related
+	mouse_capture_flag = true;
+	setRawMouseCapture(true);
+	if (auto w = getGLFW()) {
+		glfwGetCursorPos(w, &last_x, &last_y);
+		is_first_mouse = false;
 	}
 
 }
 
 
-//--------------------------------------------------------------
+// game destructor, ensure the game clears dynamically allocated memory correctly when exiting
+void ofApp::exit(void) {
+
+	delete player;
+
+	for (int i = 0; i < opposition_vec.size(); ++i) {
+		delete opposition_vec[i];
+	}
+
+	for (int i = 0; i < checkpoint_vec.size(); ++i) {
+		delete checkpoint_vec[i];
+	}
+
+	for (int i = 0; i < power_up_vec.size(); ++i) {
+		delete power_up_vec[i];
+	}
+}
+
+
+//================================================================================================
+//                                   UPDATING GAME LOGIC RELATED 
+//================================================================================================
 void ofApp::update() {
 
 	// increment time
@@ -112,32 +152,54 @@ void ofApp::update() {
 	/*** PLAYER HANDLING ***/
 
 	player->update(delta_time);
+	// -------------------- MAIN MENU GAME STATE ---------------------------
+	if (game_state == 0) {
 
-	// check if player should be able to be hit
-	if (player->getInvincibilityTimer().FinishedAndStop()) {
-		player->setColour(glm::vec3(255.0f));
 	}
 
-	/*** ENEMY HANDLING ***/
+	// -------------------- GAMEPLAY GAME STATE ---------------------------
+	else if (game_state == 1) {
 
-	// updates for opps
-	for (int i = 0; i < opposition_vec.size(); ++i) {
-		EnemyGameObject* enemy = opposition_vec[i];
-		enemy->faceTowards(player->getPosition());
-		enemy->update(delta_time);
+		/*** PLAYER HANDLING ***/
 
-		// check for collisions between an enemy and the player
-		float dist = glm::distance(player->getPosition(), enemy->getPosition());
-		if (dist <= player->getRadius() + enemy->getRadius() && !player->getInvincibilityTimer().IsRunning()) {
-				
-			// handle damage
-			player->getInvincibilityTimer().Start(2.0f);
-			player->setColour(glm::vec3(255.0f, 0.0f, 50.0f));
+		player->update(delta_time);
 
-			// clean up enemy
-			delete enemy;
-			opposition_vec.erase(opposition_vec.begin() + i);
+		// check if player should be able to be hit
+		if (player->getInvincibilityTimer().FinishedAndStop()) {
+			player->setColour(glm::vec3(255.0f));
 		}
+
+		/*** ENEMY HANDLING ***/
+
+		// updates for opps
+		for (int i = 0; i < opposition_vec.size(); ++i) {
+			EnemyGameObject* enemy = opposition_vec[i];
+			enemy->faceTowards(player->getPosition());
+			enemy->update(delta_time);
+
+			// check for collisions between an enemy and the player
+			float dist = glm::distance(player->getPosition(), enemy->getPosition());
+			if (dist <= player->getRadius() + enemy->getRadius() && !player->getInvincibilityTimer().IsRunning()) {
+
+				// handle damage
+				player->getInvincibilityTimer().Start(2.0f);
+				player->setColour(glm::vec3(255.0f, 0.0f, 50.0f));
+
+				// clean up enemy
+				delete enemy;
+				opposition_vec.erase(opposition_vec.begin() + i);
+			}
+		}
+	}
+
+	// -------------------- GAME OVER GAME STATE ---------------------------
+	else if (game_state == 2) {
+		// to-do
+	}
+
+	// -------------------- GAME WON GAME STATE ---------------------------
+	else if (game_state == 3) {
+		// to-do
 	}
 
 	//test (make objects move for visualization and testing model/world matrix)
@@ -150,11 +212,75 @@ void ofApp::update() {
 	*/
 }
 
-//--------------------------------------------------------------
+
+//================================================================================================
+//                                  DRAWING / RENDERING RELATED 
+//================================================================================================
 void ofApp::draw() {
 
-	// draw world coordinate objects
-	ofEnableDepthTest();
+	// -------------------- MAIN MENU GAME STATE ---------------------------
+	if (game_state == 0) {
+
+		ofSetColor(255, 255, 255);
+		
+		// background image -> change to dynamic texture for bonus points later (if time permits)
+		if (menu_background.isAllocated()) {
+			menu_background.draw(0, 0, ofGetWidth(), ofGetHeight());
+		}
+
+		// setup button rectangle positions
+		float center_x = ofGetWidth() / 2.0f;
+		float center_y = ofGetHeight() / 2.0f;
+
+		// title specific
+		ofRectangle title_bounds = menu_title_font.getStringBoundingBox(TITLE_TEXT, 0, 0);
+		float title_x = center_x - (title_bounds.width / 2.0f);
+		float title_y = center_y - 100; // top
+		menu_title_font.drawString(TITLE_TEXT, title_x, title_y);
+
+		// caption specific
+		ofRectangle caption_bounds = menu_caption_font.getStringBoundingBox(CAPTION_TEXT, 0, 0);
+		float caption_x = center_x - (caption_bounds.width / 2.0f);
+		float caption_y = center_y - 20; // middle-top
+		menu_caption_font.drawString(CAPTION_TEXT, caption_x, caption_y);
+
+		// start button specific
+		ofRectangle start_bounds = menu_button_font.getStringBoundingBox(START_TEXT, 0, 0);
+		float start_x = center_x - (start_bounds.width / 2.0f);
+		float start_y = center_y + 150; // middle-bottom
+		start_button_rect = menu_button_font.getStringBoundingBox(START_TEXT, start_x, start_y);
+
+		// quit button specific
+		ofRectangle quit_bounds = menu_button_font.getStringBoundingBox(QUIT_TEXT, 0, 0);
+		float quit_x = center_x - (quit_bounds.width / 2.0f);
+		float quit_y = center_y + 200; // bottom
+		quit_button_rect = menu_button_font.getStringBoundingBox(QUIT_TEXT, quit_x, quit_y);
+
+		// check if mouse is hovering over start, turn yellow if so
+		if (start_button_rect.inside(ofGetMouseX(), ofGetMouseY())) {
+			ofSetColor(255, 255, 0);
+		}
+		else {
+			ofSetColor(255, 255, 255);
+		}
+		menu_button_font.drawString(START_TEXT, start_x, start_y);
+
+		// check if mouse is hovering over quit, turn yellow if so
+		if (quit_button_rect.inside(ofGetMouseX(), ofGetMouseY())) {
+			ofSetColor(255, 255, 0);
+		}
+		else {
+			ofSetColor(255, 255, 255);
+		}
+		menu_button_font.drawString(QUIT_TEXT, quit_x, quit_y);
+
+
+	}
+
+	// -------------------- GAMEPLAY GAME STATE ---------------------------
+	else if (game_state == 1) {
+
+		ofEnableDepthTest();
 
 	player->getCamera().begin();
 
@@ -250,12 +376,19 @@ void ofApp::draw() {
 	lightingShader->end();
 	player->getCamera().end();
 
-	// reset colour, draw HUD elements
-	ofSetColor(255, 255, 255);
-	ofDrawBitmapString("FPS: " + ofToString(ofGetFrameRate()), ofGetWidth() - 160, 20);
-	ofDrawBitmapString("Time Elapsed: " + ofToString(time_elapsed, 2), ofGetWidth() - 160, 35);
-	ofDrawBitmapString("Player Health: " + ofToString(player->getHealth()), ofGetWidth() - 160, 50);
+	}
+
+	// -------------------- GAME OVER GAME STATE ---------------------------
+	else if (game_state == 2) {
+		// to-do
+	}
+
+	// -------------------- GAME WON GAME STATE ---------------------------
+	else if (game_state == 3) {
+		// to-do
+	}
 }
+
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key) {
@@ -264,108 +397,128 @@ void ofApp::keyPressed(int key) {
 	}
 }
 
+
 //--------------------------------------------------------------
 void ofApp::keyReleased(int key) {
 
 }
 
+
 //--------------------------------------------------------------
 void ofApp::mouseMoved(int x, int y) {
-	if (!mouse_capture_flag || !player) return;
 
-	double cursor_x = x, cursor_y = y;
+	// only make the mouse control the camera for gameplay
+	if (game_state == 1) {
 
-	if (is_first_mouse) {
-		last_x = cursor_x;
-		last_y = cursor_y;
-		is_first_mouse = false;
-		return;
+		if (!mouse_capture_flag || !player) return;
+
+		double cursor_x = x, cursor_y = y;
+
+		if (is_first_mouse) {
+			last_x = cursor_x;
+			last_y = cursor_y;
+			is_first_mouse = false;
+			return;
+		}
+
+		double delta_x = cursor_x - last_x;
+		double delta_y = cursor_y - last_y;
+		last_x = cursor_x; last_y = cursor_y;
+
+		float yaw_amt = static_cast<float>(-delta_x) * mouse_sensitivity; // left -> +yaw
+		float pitch_amt = static_cast<float>(-delta_y) * mouse_sensitivity; // up -> +pitch
+
+		// LOWKEY WE NEED PROPER PITCH CLAMPING however I cannot figure it out so fuck it (js don't flick straight up/down)
+		player->pitch(pitch_amt);
+		player->yaw(yaw_amt);
+
+		recenterCursorToWindowCenter();
+
 	}
 
-	double delta_x = cursor_x - last_x;
-	double delta_y = cursor_y - last_y;
-	last_x = cursor_x; last_y = cursor_y;
-
-	float yaw_amt = static_cast<float>(-delta_x) * mouse_sensitivity; // left -> +yaw
-	float pitch_amt = static_cast<float>(-delta_y) * mouse_sensitivity; // up -> +pitch
-
-	// LOWKEY WE NEED PROPER PITCH CLAMPING however I cannot figure it out so fuck it (js don't flick straight up/down)
-	player->pitch(pitch_amt);
-	player->yaw(yaw_amt);
-
-	recenterCursorToWindowCenter();
 }
+
 
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button) {
 	mouseMoved(x, y);
 }
 
+
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button) {
 
-	// toggle mouse capture
-	if (button == OF_MOUSE_BUTTON_RIGHT) {
-		mouse_capture_flag = !mouse_capture_flag;
-		setRawMouseCapture(mouse_capture_flag);
+	// ----------- check if the player has clicked a menu option ----------
+	if (game_state == 0) {
 
-		// reset delta baseline so the first frame after toggle has no jump
-		if (auto w = getGLFW()) {
-			glfwGetCursorPos(w, &last_x, &last_y);
-			is_first_mouse = false;
+		if (button == OF_MOUSE_BUTTON_LEFT) {
+			// handle start button
+			if (start_button_rect.inside(x, y)) {
+				setupGameplayGameState();
+				game_state = 1;
+			}
+			// handle quit button
+			if (quit_button_rect.inside(x, y)) {
+				ofExit();
+			}
 		}
 	}
+
+	// ---------- toggle mouse capture when gameplay starts -----------
+	else if (game_state == 1) {
+
+		if (button == OF_MOUSE_BUTTON_RIGHT) {
+			mouse_capture_flag = !mouse_capture_flag;
+			setRawMouseCapture(mouse_capture_flag);
+
+			// reset delta baseline so the first frame after toggle has no jump
+			if (auto w = getGLFW()) {
+				glfwGetCursorPos(w, &last_x, &last_y);
+				is_first_mouse = false;
+			}
+		}
+
+	}
 }
+
 
 //--------------------------------------------------------------
 void ofApp::mouseReleased(int x, int y, int button) {
 
 }
 
+
 //--------------------------------------------------------------
 void ofApp::mouseEntered(int x, int y) {
 
 }
+
 
 //--------------------------------------------------------------
 void ofApp::mouseExited(int x, int y) {
 
 }
 
+
 //--------------------------------------------------------------
 void ofApp::windowResized(int w, int h) {
 
 }
+
 
 //--------------------------------------------------------------
 void ofApp::gotMessage(ofMessage msg) {
 
 }
 
+
 //--------------------------------------------------------------
 void ofApp::dragEvent(ofDragInfo dragInfo) { 
 
 }
 
-/*** Free all the dynamically allocated memory ***/
-void ofApp::exit(void) {
 
-	delete player;
-
-	for (int i = 0; i < opposition_vec.size(); ++i) {
-		delete opposition_vec[i];
-	}
-
-	for (int i = 0; i < checkpoint_vec.size(); ++i) {
-		delete checkpoint_vec[i];
-	}
-
-	for (int i = 0; i < power_up_vec.size(); ++i) {
-		delete power_up_vec[i];
-	}
-}
- 
-/*** Get GLFW window helper method ***/
+// Get GLFW window helper method
 GLFWwindow* ofApp::getGLFW() {
 	auto base = ofGetWindowPtr();
 	if (!base) return nullptr;
@@ -373,7 +526,8 @@ GLFWwindow* ofApp::getGLFW() {
 	return glfwWin ? glfwWin->getGLFWWindow() : nullptr;
 }
 
-/*** Raw mouse input toggle ***/
+
+// Raw mouse input toggle
 void ofApp::setRawMouseCapture(bool on) {
 	GLFWwindow* w = getGLFW();
 	if (!w) return;
@@ -392,7 +546,8 @@ void ofApp::setRawMouseCapture(bool on) {
 	}
 }
 
-/*** Reset mouse to center ***/
+
+// Reset mouse to center
 void ofApp::recenterCursorToWindowCenter() {
 	if (auto w = getGLFW()) {
 		int ww = ofGetWindowWidth();

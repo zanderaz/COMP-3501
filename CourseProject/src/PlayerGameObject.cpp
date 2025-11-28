@@ -38,16 +38,16 @@ void PlayerGameObject::update(float delta_time) {
 
     // handle horizontal direction of acceleration
     glm::vec3 accelDir(0);
-    if (ofGetKeyPressed('w')) {
+    if (ofGetKeyPressed('w') || ofGetKeyPressed('W')) {
         accelDir += forward; // foward
     }
-    if (ofGetKeyPressed('a')) {
+    if (ofGetKeyPressed('a') || ofGetKeyPressed('A')) {
         accelDir -= side; // left
     }
-    if (ofGetKeyPressed('s')) {
+    if (ofGetKeyPressed('s') || ofGetKeyPressed('S')) {
         accelDir -= forward; // backward
     }
-    if (ofGetKeyPressed('d')) {
+    if (ofGetKeyPressed('d') || ofGetKeyPressed('D')) {
         accelDir += side; // right
     }
 
@@ -115,7 +115,7 @@ void PlayerGameObject::roll(float amt) {
 }
 
 
-/*** Make sure the player is upright ***/
+/*** Make sure the player's roll stays consistent ***/
 void PlayerGameObject::enforceUpright() {
     const glm::vec3 worldUp(0, 1, 0);
 

@@ -16,10 +16,14 @@ class ofApp : public ofBaseApp {
 
 public:
 
+	// main game logic functions
 	void setup();
+	void setupGameplayGameState(void);
+	void exit(void) override;
 	void update();
 	void draw();
 
+	// built in OF functions 
 	void keyPressed(int key);
 	void keyReleased(int key);
 	void mouseMoved(int x, int y );
@@ -31,8 +35,8 @@ public:
 	void windowResized(int w, int h);
 	void dragEvent(ofDragInfo dragInfo);
 	void gotMessage(ofMessage msg);
-	void exit(void) override;
 
+	// helper functions
 	static GLFWwindow* getGLFW(void);
 	void setRawMouseCapture(bool on);
 	void recenterCursorToWindowCenter(void);
@@ -57,6 +61,9 @@ private:
 	// track time
 	float time_elapsed;
 
+	// current game state ~ 0 = main menu, 1 = gameplay, 2 = game over, 3 = game won 
+	unsigned short int game_state;
+
 	// sound
 	ofSoundPlayer background_music;
 
@@ -74,4 +81,18 @@ private:
 	ofImage texture, skyTexture;
 	float orbitSpeed, orbitRadius, orbitAngle;
 	bool bUseTexture = true;
+	// main-menu fonts and geometry
+	ofTrueTypeFont menu_button_font;
+	ofTrueTypeFont menu_title_font;
+	ofTrueTypeFont menu_caption_font;
+	ofImage menu_background;
+	ofRectangle start_button_rect;
+	ofRectangle quit_button_rect;
+
+	// ----------------- Constants -----------------
+	const string TITLE_TEXT = "Triple Sicks";
+	const string CAPTION_TEXT = "COMP3501 Course Project by Aidan, Evan, Zander";
+	const string START_TEXT = "Start Game";
+	const string QUIT_TEXT = "Quit Game";
+
 };
