@@ -10,7 +10,7 @@ CheckpointGameObject::CheckpointGameObject(const ofMesh& mesh, const glm::vec3& 
 
 
 //draw the checkpoints
-void CheckpointGameObject::draw() {
-	GameObject::draw();
+void CheckpointGameObject::draw(ofShader* lightingShader) {
+	GameObject::draw(lightingShader);
 }
 

@@ -9,7 +9,7 @@ public:
 	PowerUpObject(const ofMesh& mesh, const glm::vec3& position, float scale);
 	inline const float getRadius() const { return radius; }
 	inline void setRadius(float r) { radius = r; }
-	void draw() override;
+	void draw(ofShader* lightingShader) override;
 
 private:
 

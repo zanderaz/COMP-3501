@@ -95,7 +95,7 @@ void PlayerGameObject::update(float delta_time) {
 
 
 /*** Draw the player (empty for 1st person) ***/
-void PlayerGameObject::draw() {}
+void PlayerGameObject::draw(ofShader* lightingShader) {}
 
 
 /*** Rotation methods ***/
