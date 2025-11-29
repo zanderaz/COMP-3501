@@ -10,6 +10,9 @@
 #include "EnemyGameObject.h"
 #include "PowerUpObject.h"
 #include "timer.h"
+#include "redBloodCell.h"
+#include "redBloodCellParticleSystem.h"
+#include "screenSpaceEffect.h"
 
 
 class ofApp : public ofBaseApp {
@@ -40,6 +43,8 @@ public:
 	static GLFWwindow* getGLFW(void);
 	void setRawMouseCapture(bool on);
 	void recenterCursorToWindowCenter(void);
+
+	void handleCheckpointCollision(CheckpointGameObject* checkpoint);
 
 private:
 
@@ -81,6 +86,11 @@ private:
 	ofImage texture, skyTexture;
 	float orbitSpeed, orbitRadius, orbitAngle;
 	bool bUseTexture = true;
+	RedBloodCellParticleSystem* rbc;
+	RedBloodCell* redBloodCell;
+	bool sse;
+	ScreenSpaceEffect screenSpaceEffect;
+
 	// main-menu fonts and geometry
 	ofTrueTypeFont menu_button_font;
 	ofTrueTypeFont menu_title_font;
@@ -88,6 +98,9 @@ private:
 	ofImage menu_background;
 	ofRectangle start_button_rect;
 	ofRectangle quit_button_rect;
+
+	// world state
+	bool bloodstream, boneMarrow;
 
 	// ----------------- Constants -----------------
 	const string TITLE_TEXT = "Triple Sicks";

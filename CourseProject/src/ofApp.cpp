@@ -25,7 +25,7 @@ void ofApp::setup() {
 	// load textures
 	ofDisableArbTex();
 	texture.load("images/DOG.png");
-	skyTexture.load("images/DOG.png");
+	skyTexture.load("images/blood.jpeg");
 
 	if (!lightingShader->isLoaded()) {
 		ofLogError() << "Lighting Shader failed to load!";
@@ -45,11 +45,14 @@ void ofApp::setup() {
 	mouse_sensitivity = 0.001f;
 	last_x = 0.0, last_y = 0.0;
 	is_first_mouse = true;
+	// start in bloodstream
+	bloodstream = true;
+	boneMarrow = false;
 
 	game_state = 0; // start on main menu
 
 	// camera frustum defaults
-	cam.setNearClip(0.1f);
+	cam.setNearClip(1.0f);
 	cam.setFarClip(5000.0f);
 	cam.setFov(90.0f);
 
@@ -74,6 +77,17 @@ void ofApp::setup() {
 	power_up_vec.push_back(new PowerUpObject(power_up_mesh.getMesh(), glm::vec3(0, -200, 0), 1.f));
 	power_up_vec.push_back(new PowerUpObject(power_up_mesh.getMesh(), glm::vec3(0, 0, 200), 1.f));
 	power_up_vec.push_back(new PowerUpObject(power_up_mesh.getMesh(), glm::vec3(0, 0, -200), 1.f));
+
+	// checkpoint to tp to bonemarrow
+	checkpoint_vec.push_back(new CheckpointGameObject(power_up_mesh.getMesh(), glm::vec3(-300, 100, 200), 1.f));
+
+	// test for red blood cells
+	rbc = new RedBloodCellParticleSystem(player->getCamera());
+	rbc->setup(25);
+	ofMesh mesh = ofMesh::sphere(25, 100);
+	redBloodCell = new RedBloodCell(rbc, mesh, glm::vec3(20, 200, -20), 1.0f);
+	sse = false;
+	screenSpaceEffect.setup(ofGetWidth(), ofGetHeight());
 
 	// test
 	// opposition_vec.push_back(new EnemyGameObject(power_up_mesh.getMesh(), glm::vec3(500, -200, 0), 1.f));
@@ -187,6 +201,32 @@ void ofApp::update() {
 				opposition_vec.erase(opposition_vec.begin() + i);
 			}
 		}
+
+		/*** CHECKPOINT HANDLING ***/
+		for (int i = 0; i < checkpoint_vec.size(); ++i) {
+			CheckpointGameObject* checkpoint = checkpoint_vec[i];
+
+			// Check for collision with checkpoint
+			float dist = glm::distance(player->getPosition(), checkpoint->getPosition());
+			if (dist <= player->getRadius() + checkpoint->getRadius()) {
+
+				// Teleport player and change environment
+				handleCheckpointCollision(checkpoint);
+
+				// Remove the checkpoint (optional - if you want one-time use)
+				delete checkpoint;
+				checkpoint_vec.erase(checkpoint_vec.begin() + i);
+				break; // Exit loop since we modified the vector
+			}
+		}
+
+		// rbc movement test
+		/*
+		glm::vec3 dir(1, 0, 0);
+		dir += 10 * delta_time;
+		redBloodCell->setPosition(redBloodCell->getPosition() + dir);
+		*/
+		redBloodCell->update(delta_time);
 	}
 
 	// -------------------- GAME OVER GAME STATE ---------------------------
@@ -276,6 +316,10 @@ void ofApp::draw() {
 
 	// -------------------- GAMEPLAY GAME STATE ---------------------------
 	else if (game_state == 1) {
+		if (sse) {
+			screenSpaceEffect.setInBloodstream(bloodstream);
+			screenSpaceEffect.begin();
+		}
 
 		ofEnableDepthTest();
 
@@ -309,7 +353,10 @@ void ofApp::draw() {
 		else {
 			lightingShader->setUniform1i("useTexture", 0);
 		}
+
 		sphere.setPosition(-50, 300, 10);
+
+		//bUseTexture = false;
 
 		lightingShader->setUniformMatrix4f("viewMatrix", player->getCamera().getModelViewMatrix());
 		lightingShader->setUniformMatrix4f("modelViewProjectionMatrix", player->getCamera().getModelViewProjectionMatrix());
@@ -319,23 +366,31 @@ void ofApp::draw() {
 		lightingShader->setUniform1i("isLight", false);
 		lightingShader->setUniform3f("emissionColor", glm::vec3(0.0));
 
-		//glm::mat4 view = player->getCamera().getModelViewMatrix();
+		
+		if (bloodstream) {
+			lightingShader->setUniform3f("emissionColor", glm::vec3(1.0f, 0.7f, 0.7f));
+		}
+		else if (boneMarrow) {
+			lightingShader->setUniform3f("emissionColor", glm::vec3(0.8f, 0.9f, 1.0f));
+		}
+
+		glm::mat4 view = player->getCamera().getModelViewMatrix();
 		glm::vec3 lightPos(100, 420, 100);
 
 		lightPos.x = 100 + (orbitRadius * cos(orbitAngle));
 		lightPos.z = 100 + (orbitRadius * sin(orbitAngle));
 		lightSphere.setPosition(lightPos);
-		//glm::vec3 viewLight = glm::vec3(view * glm::vec4(lightPos, 1.0));
+		glm::vec3 viewLight = glm::vec3(view * glm::vec4(lightPos, 1.0));
 
 		glm::vec3 camPos = player->getCamera().getPosition();
-		//glm::vec3 viewCam = glm::vec3(view * glm::vec4(camPos, 1.0));
+		glm::vec3 viewCam = glm::vec3(view * glm::vec4(camPos, 1.0));
 
-		//lightingShader->setUniform3f("lightPos", viewLight);
-		//lightingShader->setUniform3f("viewPos", viewCam);
+		lightingShader->setUniform3f("lightPos", viewLight);
+		lightingShader->setUniform3f("viewPos", viewCam);
 
 
-		lightingShader->setUniform3f("lightPos", lightPos);
-		lightingShader->setUniform3f("viewPos", camPos);
+		//lightingShader->setUniform3f("lightPos", lightPos);
+		//lightingShader->setUniform3f("viewPos", camPos);
 
 		lightingShader->setUniform3f("lightColor", glm::vec3(1, 1, 1));
 
@@ -362,16 +417,24 @@ void ofApp::draw() {
 			checkpoint_vec[i]->draw(lightingShader);
 		}
 
+		// rbc
+		redBloodCell->draw(lightingShader);
+
 		//ofSetColor(100, 60, 250);
 		//lightingShader->end();
-		lightingShader->setUniformMatrix4f("worldMatrix", alignment_check.getGlobalTransformMatrix());
-		lightingShader->setUniform3f("objectColor", glm::vec3(0.6, 0.6, 0.9));
-		alignment_check.getMesh().draw();
-
-		ofDisableDepthTest();
+		// 
+		//lightingShader->setUniformMatrix4f("worldMatrix", alignment_check.getGlobalTransformMatrix());
+		//lightingShader->setUniform3f("objectColor", glm::vec3(0.6, 0.6, 0.9));
+		//alignment_check.getMesh().draw();
 
 		lightingShader->end();
 		player->getCamera().end();
+		ofDisableDepthTest();
+
+		if (sse) {
+			screenSpaceEffect.end();
+			screenSpaceEffect.draw();
+		}
 
 	}
 
@@ -389,8 +452,11 @@ void ofApp::draw() {
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key) {
-	if (key == 't') {
+	if (key == 't' || key == 'T') {
 		bUseTexture = !bUseTexture;
+	}
+	if (key == 'e' || key == 'E') {
+		sse = !sse;
 	}
 }
 
@@ -552,5 +618,27 @@ void ofApp::recenterCursorToWindowCenter() {
 		double cx = ww * 0.5, cy = wh * 0.5;
 		glfwSetCursorPos(w, cx, cy);
 		last_x = cx; last_y = cy;
+	}
+}
+
+void ofApp::handleCheckpointCollision(CheckpointGameObject* checkpoint) {
+
+	if (bloodstream) {
+		bloodstream = false;
+		boneMarrow = true;
+
+		// Change skybox texture
+		//skyTexture.load("images/bone_marrow_texture.jpg");
+
+		// Teleport player to new area
+		player->setPosition(glm::vec3(0, 100, 0));
+
+		/*
+		orbitRadius = 200;
+		orbitSpeed = 0.5f;
+		*/
+
+		ofLog() << "Teleported to Bone Marrow environment";
+
 	}
 }

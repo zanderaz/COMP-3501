@@ -51,10 +51,6 @@ void main()
         baseColor = texture(tex0, uv0).rgb;
     }
 
-    if (!useTexture) {
-        baseColor = objectColor * 0.8; // Darken slightly to see if it's working
-    }
-
     // for light obj only
     if (isLight) {
         result = emissionColor * baseColor;
@@ -63,6 +59,7 @@ void main()
     // for other objs
     else {
         result = (ambient + diffuse + specular) * baseColor;
+        //result = lighting * emissionColor; // could add this if we want coloured lighting
     }
 
     fragColor = vec4(result.rgb, 1.0);
