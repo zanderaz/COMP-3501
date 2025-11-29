@@ -17,12 +17,12 @@ out vec2 uv0;
 
 void main() {
     // world space (saved but not in use)
-    FragPos = vec3((worldMatrix * position).xyz); // position in world space
-    Normal = normalize((worldMatrix * vec4(normal.xyz,0)).xyz); // normals in world space; note w=0
+    //FragPos = vec3((worldMatrix * position).xyz); // position in world space
+    //Normal = normalize((worldMatrix * vec4(normal.xyz,0)).xyz); // normals in world space; note w=0
 
     // transform from world to view space
-    //FragPos = vec3((viewMatrix * worldMatrix * position).xyz);
-    //Normal = normalize((viewMatrix * worldMatrix * vec4(normal.xyz,0)).xyz);
+    FragPos = vec3((viewMatrix * worldMatrix * position).xyz);
+    Normal = normalize((viewMatrix * worldMatrix * vec4(normal.xyz,0)).xyz);
     uv0 = texcoord;
     gl_Position = projectionMatrix * viewMatrix * worldMatrix * position;
 }

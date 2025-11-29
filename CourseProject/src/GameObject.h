@@ -45,6 +45,9 @@ protected:
 	glm::vec3 BASE_UP = glm::vec3(0, 1, 0);
 	glm::vec3 BASE_FORWARD = glm::vec3(0, 0, 1);
 
+	
+	ofImage texture;
+
 };
 
 #endif
