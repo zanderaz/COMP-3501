@@ -13,7 +13,7 @@
 #include "redBloodCell.h"
 #include "redBloodCellParticleSystem.h"
 #include "screenSpaceEffect.h"
-
+#include "TextBox.h"
 
 class ofApp : public ofBaseApp {
 
@@ -90,11 +90,14 @@ private:
 	RedBloodCell* redBloodCell;
 	bool sse;
 	ScreenSpaceEffect screenSpaceEffect;
+	TextBox textBox;
+	bool showTextBox;
 
 	// main-menu fonts and geometry
 	ofTrueTypeFont menu_button_font;
 	ofTrueTypeFont menu_title_font;
 	ofTrueTypeFont menu_caption_font;
+	ofTrueTypeFont dialog_font;
 	ofImage menu_background;
 	ofRectangle start_button_rect;
 	ofRectangle quit_button_rect;

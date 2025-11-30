@@ -96,7 +96,7 @@ void ofApp::setup() {
 	try {
 		background_music.load("sfx/bg_music.mp3");
 		background_music.setLoop(true);
-		background_music.setVolume(0.01f);
+		background_music.setVolume(10.0f);
 	}
 	catch (...) {
 		ofLogError() << "Music file could not be loaded. Ensure bin/data/bg_music.mp3 exists.";
@@ -108,10 +108,22 @@ void ofApp::setup() {
 		menu_title_font.load("fonts/PapyrusBold.ttf", 96);
 		menu_caption_font.load("fonts/ArialMedium.ttf", 14);
 		menu_background.load("images/menu_bg.jpg");
+		// for text boxes
+		dialog_font.load("fonts/ArialMedium.ttf", 24);
 	}
 	catch (...) {
 		ofLogError() << "Menu elements could not be loaded. Please check bin/data/fonts and bin/data/images.";
 	}
+
+	// test for text box
+	textBox.setup("Welcome to Triple Sicks! Use WASD to move, mouse to look around, and right-click to toggle mouse capture.", &dialog_font, 500.0f);
+	textBox.setSize(550, 150);
+	textBox.setPosition(ofGetWidth() / 2 - 250, ofGetHeight() - 200);
+	textBox.setBackgroundColor(ofColor(0, 0, 0, 220));
+	textBox.setTextColor(ofColor(255, 255, 0));
+	textBox.setBorderColor(ofColor(255, 255, 255));
+	textBox.setBorderWidth(3.0f);
+	showTextBox = false;
 }
 
 
@@ -316,6 +328,8 @@ void ofApp::draw() {
 
 	// -------------------- GAMEPLAY GAME STATE ---------------------------
 	else if (game_state == 1) {
+
+		// everything below (until fbo is ended) will get put in the frame buffer for screen-space effects
 		if (sse) {
 			screenSpaceEffect.setInBloodstream(bloodstream);
 			screenSpaceEffect.begin();
@@ -358,6 +372,8 @@ void ofApp::draw() {
 
 		//bUseTexture = false;
 
+		// setup attributes
+
 		lightingShader->setUniformMatrix4f("viewMatrix", player->getCamera().getModelViewMatrix());
 		lightingShader->setUniformMatrix4f("modelViewProjectionMatrix", player->getCamera().getModelViewProjectionMatrix());
 		lightingShader->setUniformMatrix4f("projectionMatrix", player->getCamera().getProjectionMatrix());
@@ -374,6 +390,7 @@ void ofApp::draw() {
 			lightingShader->setUniform3f("emissionColor", glm::vec3(0.8f, 0.9f, 1.0f));
 		}
 
+		// light and view position setup (might make the player have the light close to them
 		glm::mat4 view = player->getCamera().getModelViewMatrix();
 		glm::vec3 lightPos(100, 420, 100);
 
@@ -392,6 +409,8 @@ void ofApp::draw() {
 		//lightingShader->setUniform3f("lightPos", lightPos);
 		//lightingShader->setUniform3f("viewPos", camPos);
 
+		// test objects
+
 		lightingShader->setUniform3f("lightColor", glm::vec3(1, 1, 1));
 
 		lightingShader->setUniform3f("objectColor", glm::vec3(0.6, 0.6, 0.9));
@@ -404,7 +423,6 @@ void ofApp::draw() {
 		lightingShader->setUniform3f("emissionColor", glm::vec3(1, 1, 0.4));
 		lightingShader->setUniformMatrix4f("worldMatrix", lightSphere.getGlobalTransformMatrix());
 		lightSphere.draw();
-
 
 		player->draw(lightingShader);
 		for (int i = 0; i < opposition_vec.size(); ++i) {
@@ -420,9 +438,8 @@ void ofApp::draw() {
 		// rbc
 		redBloodCell->draw(lightingShader);
 
-		//ofSetColor(100, 60, 250);
-		//lightingShader->end();
-		// 
+		// plane for testing
+		//ofSetColor(100, 60, 250)
 		//lightingShader->setUniformMatrix4f("worldMatrix", alignment_check.getGlobalTransformMatrix());
 		//lightingShader->setUniform3f("objectColor", glm::vec3(0.6, 0.6, 0.9));
 		//alignment_check.getMesh().draw();
@@ -435,6 +452,9 @@ void ofApp::draw() {
 			screenSpaceEffect.end();
 			screenSpaceEffect.draw();
 		}
+
+		textBox.setVisible(showTextBox);
+		textBox.draw();
 
 	}
 
@@ -457,6 +477,10 @@ void ofApp::keyPressed(int key) {
 	}
 	if (key == 'e' || key == 'E') {
 		sse = !sse;
+	}
+	if (key == 'h' || key == 'H') { // Help key
+		showTextBox = !showTextBox;
+		//textBox.toggle();
 	}
 }
 
