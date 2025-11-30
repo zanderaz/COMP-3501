@@ -17,6 +17,7 @@ void RedBloodCell::update(float deltaTime) {
 }
 
 void RedBloodCell::draw(ofShader* lightingShader) {
+	// currently lighting has a bug with non-textured objects
 	//lightingShader->setUniformMatrix4f("worldMatrix", this->getWorldMatrix());
 	glm::mat4 worldWithScale = this->getWorldMatrix();
 	worldWithScale = glm::scale(worldWithScale, glm::vec3(0.8f, 0.4f, 1.0f));

@@ -37,7 +37,7 @@ void ScreenSpaceEffect::begin() {
     fbo.begin();
     ofClear(0, 0, 0, 255);
 
-    /*
+    /* test stuff
     if (!perspectiveTest) {
         ofSetColor(255, 100, 150);
         for (int i = 0; i < 40; i++) {
@@ -61,7 +61,6 @@ void ScreenSpaceEffect::draw() {
     shader.begin();
     shader.setUniformTexture("tex0", fbo.getTexture(), 0);
     shader.setUniform1f("timer", ofGetElapsedTimef());
-    //shader.setUniform1i("enableScanlines", enableScanlines ? 1 : 0);
     shader.setUniform1i("inBloodstream", inBloodstream ? 1 : 0);
 
     quad.draw();

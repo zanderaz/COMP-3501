@@ -14,9 +14,6 @@ public:
 	void update(float deltaTime) override;
 	void draw(ofShader* lightingShader) override;
 private:
-	//ofMesh mesh;
-	//glm::vec3 position;
-	//glm::vec3 colour;
 	RedBloodCellParticleSystem* rbc;
 };
 

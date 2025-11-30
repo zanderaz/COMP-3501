@@ -15,5 +15,5 @@ void main() {
     float v = 0.5 - asin(dir.y) / 3.14159265;
 
     vec4 colour = texture(skyTexture, vec2(u, v));
-    fragColor = colour * 0.8 + 0.2;
+    fragColor = colour * 0.9 + 0.2;
 }
