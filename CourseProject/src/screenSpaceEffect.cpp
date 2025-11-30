@@ -12,6 +12,7 @@ void ScreenSpaceEffect::setup(int width, int height) {
     setResolution(width, height);
 
     inBloodstream = false;
+    speedBoostActive = false;
 }
 
 // set the resolution for the fbo and quad, needed when window is resized
@@ -42,6 +43,7 @@ void ScreenSpaceEffect::draw() {
     shader.setUniformTexture("tex0", fbo.getTexture(), 0);
     shader.setUniform1f("timer", ofGetElapsedTimef());
     shader.setUniform1i("inBloodstream", inBloodstream ? 1 : 0);
+    shader.setUniform1i("speedBoostActive", speedBoostActive ? 1 : 0);
 
     quad.draw();
     shader.end();

@@ -89,6 +89,7 @@ private:
 	// game state indicators
 	unsigned short int game_state; // 0 = main menu, 1 = gameplay, 2 = game over, 3 = game won 
 	bool bloodstream, boneMarrow;
+	bool is_muted;
 
 	// test (objects, orbit for light source, boolean to toggle texture)
 	ofIcoSpherePrimitive sphere, lightSphere, skySphere;
@@ -97,7 +98,6 @@ private:
 	bool bUseTexture = true;
 	RedBloodCellParticleSystem* rbc;
 	RedBloodCell* redBloodCell;
-	bool sse;
 	ScreenSpaceEffect screenSpaceEffect;
 	TextBox textBox;
 	bool showTextBox;
@@ -107,5 +107,7 @@ private:
 	const string CAPTION_TEXT = "COMP3501 Course Project by Aidan, Evan, Zander";
 	const string START_TEXT = "Start Game";
 	const string QUIT_TEXT = "Quit Game";
+
+	const float BG_MUSIC_VOL = 0.2f;
 
 };

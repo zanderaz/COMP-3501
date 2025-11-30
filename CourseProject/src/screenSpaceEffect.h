@@ -12,7 +12,8 @@ public:
     void end();
     void draw();
 
-    void setInBloodstream(bool bloodstream) { inBloodstream = bloodstream; }
+    inline void setInBloodstream(bool bloodstream) { inBloodstream = bloodstream; }
+    inline void setSpeedBoostActive(bool sba) { speedBoostActive = sba; }
     void setResolution(int width, int height);
 
 private:
@@ -22,14 +23,10 @@ private:
     ofFbo fbo;
     ofShader shader;
     ofMesh quad;
-    //ofEasyCam cam;
 
-    bool enableScanlines;
     bool inBloodstream;
-    bool perspectiveTest;
+    bool speedBoostActive;
 
-    //glm::vec3 cdata[40];
-    //glm::vec3 ccol[40];
 };
 
 #endif
