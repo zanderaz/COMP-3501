@@ -3,6 +3,7 @@
 #define TEXT_BOX_H
 
 #include "ofMain.h"
+#include "timer.h"
 
 // text box for dialog and information
 
@@ -27,6 +28,10 @@ public:
     bool isVisible() const { return visible; }
     ofRectangle getBounds() const { return bounds; }
 
+    // timer
+    void showTemporarily(float seconds);
+    void toggleWithTimer(float seconds);
+
 private:
     std::string text;
     ofTrueTypeFont* font;
@@ -38,6 +43,7 @@ private:
     float padding;
     float maxWidth;
     bool visible;
+    Timer* timer;
 
     std::vector<std::string> wrappedText;
     void wrapText();

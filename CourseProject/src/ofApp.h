@@ -91,16 +91,23 @@ private:
 	bool bloodstream, boneMarrow;
 	bool is_muted;
 
+	// textures
+	ofImage texture, skyTexture, wallTexture;
+
 	// test (objects, orbit for light source, boolean to toggle texture)
 	ofIcoSpherePrimitive sphere, lightSphere, skySphere;
-	ofImage texture, skyTexture;
 	float orbitSpeed, orbitRadius, orbitAngle;
 	bool bUseTexture = true;
 	RedBloodCellParticleSystem* rbc;
 	RedBloodCell* redBloodCell;
 	ScreenSpaceEffect screenSpaceEffect;
+
 	TextBox textBox;
 	bool showTextBox;
+
+	void createWalls();
+	void createWallsSection1();
+	void createWallsSection2();
 
 	// ----------------- Constants -----------------
 	const string TITLE_TEXT = "Triple Sicks";

@@ -36,7 +36,9 @@ void ofApp::setup() {
 	// init textures
 	ofDisableArbTex();
 	texture.load("images/DOG.png");
-	skyTexture.load("images/blood.jpeg");
+	skyTexture.load("images/blood.jpg");
+	skyTexture.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
+	wallTexture.load("images/bloodold.jpeg");
 
 	// init sounds
 	try {
@@ -56,7 +58,7 @@ void ofApp::setup() {
 	// test object related
 	sphere.setPosition(-150, 0, 10);
 	skySphere.setRadius(1000);
-	skySphere.setResolution(5);
+	skySphere.setResolution(6);
 	orbitRadius = 400;
 	orbitSpeed = 0.3;
 	orbitAngle = 0;
@@ -114,13 +116,14 @@ void ofApp::setup() {
 	textBox.setBackgroundColor(ofColor(0, 0, 0, 220));
 	textBox.setTextColor(ofColor(255, 255, 0));
 	textBox.setBorderColor(ofColor(255, 255, 255));
-	textBox.setBorderWidth(3.0f);
 	textBox.setPosition(ofGetWidth() / 2 - 250, ofGetHeight() - 200);
+	textBox.setBorderWidth(3.0f);
 	showTextBox = false;
 
-	// Collision
+	// TESTING COLLISION FUNCTIONALITY
 
 	// a floor plane
+	/*
 	ofPlanePrimitive planeMesh;
 	planeMesh.set(1000, 1000); // Large floor
 	planeMesh.setResolution(2, 2);
@@ -134,10 +137,12 @@ void ofApp::setup() {
 	boxMesh.set(100); // 100x100x100 box
 	GameObject* box = new GameObject(boxMesh.getMesh(), glm::vec3(200, 0, 200), 1.0f);
 	wall_objects_vec.push_back(box);
+	*/
 
 	// setup with player
+	//player->setWalls(&wall_objects_vec);
+	createWalls();
 	player->setWalls(&wall_objects_vec);
-	
 }
 
 
@@ -460,6 +465,9 @@ void ofApp::draw() {
 			checkpoint_vec[i]->draw(lightingShader);
 		}
 
+		if (bUseTexture) {
+			lightingShader->setUniformTexture("tex0", wallTexture, 0);
+		}
 		for (GameObject* wall : wall_objects_vec) {
 			wall->draw(lightingShader);
 		}
@@ -480,7 +488,6 @@ void ofApp::draw() {
 		screenSpaceEffect.end();
 		screenSpaceEffect.draw();
 
-		textBox.setVisible(showTextBox);
 		textBox.draw();
 
 	}
@@ -525,9 +532,8 @@ void ofApp::keyPressed(int key) {
 	if (key == 'f' || key == 'F') {
 		bloodstream = !bloodstream;
 	}
-	if (key == 'h' || key == 'H') { // Help key
-		showTextBox = !showTextBox;
-		//textBox.toggle();
+	if (key == 'h' || key == 'H') {
+		textBox.showTemporarily(3.0f);
 	}
 }
 
@@ -715,3 +721,128 @@ void ofApp::handleCheckpointCollision(CheckpointGameObject* checkpoint) {
 
 	}
 }
+
+void ofApp::createWalls() {
+	createWallsSection1();
+	createWallsSection2();
+	//createWallsSection3();
+
+	ofLog() << "Created walls: " << wall_objects_vec.size() << " objects";
+	ofLog() << "Player starts at position: " << player->getPosition();
+}
+
+// create walls for the play area
+void ofApp::createWallsSection1() {
+	// wall dimensions
+	float wallThickness = 20.0f;
+	float wallHeight = 300.0f;
+
+	// room dimensions
+	float roomSize = 800.0f;
+
+	// hallway dimensions
+	float hallwayLength = 400.0f;
+	float hallwayWidth = 200.0f;
+
+	// floor
+	ofBoxPrimitive floorMesh;
+	floorMesh.set(roomSize * 6, 5, roomSize * 6);
+	GameObject* floor = new GameObject(floorMesh.getMesh(), glm::vec3(0, -50, 0), 1.0f);
+	wall_objects_vec.push_back(floor);
+
+	// ===== ROOM 1 ======
+
+	// starting room
+
+	ofBoxPrimitive backWallMesh;
+	backWallMesh.set(roomSize, wallHeight, wallThickness);
+	GameObject* backWall = new GameObject(backWallMesh.getMesh(), glm::vec3(0, wallHeight / 2 - 50, -roomSize / 2), 1.0f);
+	wall_objects_vec.push_back(backWall);
+
+	ofBoxPrimitive leftWallMesh;
+	leftWallMesh.set(wallThickness, wallHeight, roomSize*1.5);
+	GameObject* leftWall = new GameObject(leftWallMesh.getMesh(), glm::vec3(-roomSize / 2, wallHeight / 2 - 50, (200 - roomSize*0.5)), 1.0f);
+	wall_objects_vec.push_back(leftWall);
+
+	
+	ofBoxPrimitive rightWallMesh;
+	rightWallMesh.set(wallThickness, wallHeight, roomSize);
+	GameObject* rightWall = new GameObject(rightWallMesh.getMesh(), glm::vec3(roomSize / 2, wallHeight / 2 - 50, 0), 1.0f);
+	wall_objects_vec.push_back(rightWall);
+
+	// hallway out of room
+
+	ofBoxPrimitive leftHallWallMesh;
+	leftHallWallMesh.set(wallThickness, wallHeight, hallwayLength/2);
+	GameObject* leftHallWall = new GameObject(leftHallWallMesh.getMesh(), glm::vec3(-hallwayWidth / 2, wallHeight / 2 - 50, hallwayLength/2 + 100), 1.0f);
+	wall_objects_vec.push_back(leftHallWall);
+
+	ofBoxPrimitive rightHallWallMesh;
+	rightHallWallMesh.set(wallThickness, wallHeight, hallwayLength/2);
+	GameObject* rightHallWall = new GameObject(rightHallWallMesh.getMesh(), glm::vec3(hallwayWidth / 2, wallHeight / 2 - 50, hallwayLength/2 + 100), 1.0f);
+	wall_objects_vec.push_back(rightHallWall);
+
+	// front of room
+
+	float frontWallSegmentWidth = (roomSize - hallwayWidth) / 2;
+
+	/*
+	ofBoxPrimitive frontWallLeftMesh;
+	frontWallLeftMesh.set(frontWallSegmentWidth, wallHeight, wallThickness);
+	GameObject* frontWallLeft = new GameObject(frontWallLeftMesh.getMesh(), glm::vec3(-(roomSize + hallwayWidth) / 4, wallHeight / 2 - 50, roomSize / 2), 1.0f);
+	wall_objects_vec.push_back(frontWallLeft);
+	*/
+	
+	ofBoxPrimitive frontWallRightMesh;
+	frontWallRightMesh.set(frontWallSegmentWidth, wallHeight, wallThickness);
+	GameObject* frontWallRight = new GameObject(frontWallRightMesh.getMesh(), glm::vec3((roomSize + hallwayWidth) / 4, wallHeight / 2 - 50, roomSize / 2), 1.0f);
+	wall_objects_vec.push_back(frontWallRight);
+	
+
+	// big ceiling for now
+	ofBoxPrimitive ceilingMesh;
+	ceilingMesh.set(roomSize*4, 5, roomSize*4);
+	GameObject* ceiling = new GameObject(ceilingMesh.getMesh(), glm::vec3(0, wallHeight - 50, 0), 1.0f);
+	ceiling->setVisible(false);
+	wall_objects_vec.push_back(ceiling);
+}
+
+void ofApp::createWallsSection2() {
+	// wall dimensions
+	float wallThickness = 20.0f;
+	float wallHeight = 300.0f;
+
+	// room dimensions
+	//float roomSize = 800.0f;
+
+	// hallway dimensions
+	float hallwayLength = 400.0f;
+	float hallwayWidth = 200.0f;
+
+	// back wall out of first room
+	ofBoxPrimitive frontWallMesh;
+	frontWallMesh.set(1600, wallHeight, wallThickness);
+	GameObject* frontWall = new GameObject(frontWallMesh.getMesh(), glm::vec3(0, wallHeight / 2 - 50, 800), 1.0f);
+	wall_objects_vec.push_back(frontWall);
+
+	// out of first room
+
+	// left side (dead end)
+	ofBoxPrimitive sideWallMesh;
+	sideWallMesh.set(800, wallHeight, wallThickness);
+	GameObject* leftSideWall = new GameObject(sideWallMesh.getMesh(), glm::vec3(800, wallHeight / 2 - 50, 400), 1.0f);
+	leftSideWall->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(leftSideWall);
+
+	sideWallMesh.set(400, wallHeight, wallThickness);
+	GameObject* deadEnd = new GameObject(sideWallMesh.getMesh(), glm::vec3(600, wallHeight / 2 - 50, 0), 1.0f);
+	//deadEnd->setOrientation(glm::angleAxis(glm::radians(0.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(deadEnd);
+
+	// right side
+	sideWallMesh.set(1000, wallHeight, wallThickness);
+	GameObject* rightSideWall = new GameObject(sideWallMesh.getMesh(), glm::vec3(-600, wallHeight / 2 - 50, 400), 1.0f);
+	//rightSideWall->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(rightSideWall);
+}
+

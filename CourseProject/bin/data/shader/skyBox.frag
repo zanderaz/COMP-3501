@@ -7,8 +7,9 @@ in vec3 vDirection;
 out vec4 fragColor;
 
 void main() {
-    //fragColor = texture(skyTexture, uv0);
+    fragColor = texture(skyTexture, uv0) * 0.7;
     
+    /*
     vec3 dir = normalize(vDirection);
 
     float u = 0.5 + atan(dir.z, dir.x) / (2.0 * 3.14159265);
@@ -16,4 +17,5 @@ void main() {
 
     vec4 colour = texture(skyTexture, vec2(u, v));
     fragColor = colour * 0.9 + 0.2;
+    */
 }

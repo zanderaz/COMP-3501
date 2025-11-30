@@ -25,6 +25,14 @@ public:
 	inline void setRadius(float r) { radius = r; }
 	inline void setVelocity(const glm::vec3& vel) { velocity = vel; }
 	inline void setHealth(int h) { health = h; }
+	
+	// render and logic
+	void draw(ofShader* lightingShader) override;
+	void update(float delta_time) override;
+
+	// collisions
+	inline void setWalls(vector<GameObject*>* walls_vec) { walls = walls_vec; }
+	void resolveCollisions(void);
 
 	// rotation and movement
 	void update(float delta_time) override;

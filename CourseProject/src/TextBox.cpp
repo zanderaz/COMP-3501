@@ -4,6 +4,7 @@ TextBox::TextBox()
     : font(nullptr), backgroundColor(0, 0, 0, 200), textColor(255, 255, 255), borderColor(255, 255, 255), borderWidth(2.0f), padding(20.0f), maxWidth(400.0f) , visible(false)
 {
     bounds = ofRectangle(0, 0, maxWidth + 2 * padding, 200);
+    timer = new Timer();
 }
 
 void TextBox::setup(const std::string& text, ofTrueTypeFont* font, float maxWidth) {
@@ -97,6 +98,11 @@ void TextBox::wrapText() {
 void TextBox::draw() {
     if (!visible || !font) return;
 
+    if (timer->FinishedAndStop()) {
+        visible = false;
+        return;
+    }
+
     // Draw background
     ofSetColor(backgroundColor);
     ofDrawRectangle(bounds);
@@ -119,5 +125,17 @@ void TextBox::draw() {
         float x = bounds.x + padding;
         font->drawString(line, x, y);
         y += lineHeight;
+    }
+}
+
+void TextBox::showTemporarily(float seconds) {
+    this->visible = true;
+    timer->Start(seconds);
+}
+
+void TextBox::toggleWithTimer(float seconds) {
+    this->visible = !this->visible;
+    if (this->visible) {
+        timer->Start(seconds);
     }
 }
