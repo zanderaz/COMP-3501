@@ -6,14 +6,17 @@
 
 class ScreenSpaceEffect {
 public:
+
     void setup(int width, int height);
     void begin();
     void end();
     void draw();
 
     void setInBloodstream(bool bloodstream) { inBloodstream = bloodstream; }
+    void setResolution(int width, int height);
 
 private:
+
     void makeScreenQuad(int w, int h);
 
     ofFbo fbo;

@@ -5,37 +5,6 @@ void ofApp::setup() {
 
 	// openframework project specific
 	ofSetWindowTitle("Course Project - Triple Sicks");
-	
-	// init shaders
-	lightingShader = new ofShader();
-	skyBoxShader = new ofShader();
-
-	lightingShader->load("shader/lighting");
-	skyBoxShader->load("shader/skyBox");
-
-	// test (sphere not in a game obj)
-	sphere.setPosition(-150, 0, 10);
-	skySphere.setRadius(1000);
-	skySphere.setResolution(5);
-
-	orbitRadius = 400;
-	orbitSpeed = 0.3;
-	orbitAngle = 0;
-
-	// load textures
-	ofDisableArbTex();
-	texture.load("images/DOG.png");
-	skyTexture.load("images/blood.jpeg");
-
-	if (!lightingShader->isLoaded()) {
-		ofLogError() << "Lighting Shader failed to load!";
-		ofExit();
-	}
-
-	if (!skyBoxShader->isLoaded()) {
-		ofLogError() << "Skybox shader Shader failed to load!";
-		ofExit();
-	}
 	ofSetFrameRate(120); // gets overriden with vsync for whatever reason
 	ofBackground(40);
 
@@ -45,16 +14,55 @@ void ofApp::setup() {
 	mouse_sensitivity = 0.001f;
 	last_x = 0.0, last_y = 0.0;
 	is_first_mouse = true;
-	// start in bloodstream
-	bloodstream = true;
+	bloodstream = true; // start in bloodstream
 	boneMarrow = false;
-
 	game_state = 0; // start on main menu
+	
+	// init shaders
+	lightingShader = new ofShader();
+	skyBoxShader = new ofShader();
+	lightingShader->load("shader/lighting");
+	if (!lightingShader->isLoaded()) {
+		ofLogError() << "Lighting Shader failed to load!";
+		ofExit();
+	}
+	skyBoxShader->load("shader/skyBox");
+	if (!skyBoxShader->isLoaded()) {
+		ofLogError() << "Skybox shader Shader failed to load!";
+		ofExit();
+	}
 
-	// camera frustum defaults
+	// init textures
+	ofDisableArbTex();
+	texture.load("images/DOG.png");
+	skyTexture.load("images/blood.jpeg");
+
+	// init sounds
+	try {
+		background_music.load("sfx/bg_music.mp3");
+		background_music.setLoop(true);
+		background_music.setVolume(0.2f);
+	}
+	catch (...) {
+		ofLogError() << "Music file could not be loaded. Ensure bin/data/bg_music.mp3 exists.";
+	}
+
+	// camera settings
 	cam.setNearClip(1.0f);
 	cam.setFarClip(5000.0f);
 	cam.setFov(90.0f);
+
+	// test object related
+	sphere.setPosition(-150, 0, 10);
+	skySphere.setRadius(1000);
+	skySphere.setResolution(5);
+	orbitRadius = 400;
+	orbitSpeed = 0.3;
+	orbitAngle = 0;
+
+	alignment_check.set(640, 480);
+	alignment_check.setPosition(320, 240, 0);
+	alignment_check.setResolution(2, 2);
 
 	// setup meshes
 	power_up_mesh.setRadius(20);
@@ -62,10 +70,6 @@ void ofApp::setup() {
 
 	player_mesh.setRadius(0);
 	player_mesh.setResolution(0);
-
-	alignment_check.set(640, 480);
-	alignment_check.setPosition(320, 240, 0);
-	alignment_check.setResolution(2, 2);
 
 	// create the player
 	player = new PlayerGameObject(player_mesh.getMesh(), glm::vec3(0), 1.0f, cam);
@@ -92,38 +96,47 @@ void ofApp::setup() {
 	// test
 	// opposition_vec.push_back(new EnemyGameObject(power_up_mesh.getMesh(), glm::vec3(500, -200, 0), 1.f));
 
-	// setup sound
-	try {
-		background_music.load("sfx/bg_music.mp3");
-		background_music.setLoop(true);
-		background_music.setVolume(10.0f);
-	}
-	catch (...) {
-		ofLogError() << "Music file could not be loaded. Ensure bin/data/bg_music.mp3 exists.";
-	}
-
-	// setup main-menu elements
-	try {
-		menu_button_font.load("fonts/ArialMedium.ttf", 32);
-		menu_title_font.load("fonts/PapyrusBold.ttf", 96);
-		menu_caption_font.load("fonts/ArialMedium.ttf", 14);
-		menu_background.load("images/menu_bg.jpg");
-		// for text boxes
-		dialog_font.load("fonts/ArialMedium.ttf", 24);
-	}
-	catch (...) {
-		ofLogError() << "Menu elements could not be loaded. Please check bin/data/fonts and bin/data/images.";
-	}
-
-	// test for text box
+	// setup the info text box
 	textBox.setup("Welcome to Triple Sicks! Use WASD to move, mouse to look around, and right-click to toggle mouse capture.", &dialog_font, 500.0f);
 	textBox.setSize(550, 150);
-	textBox.setPosition(ofGetWidth() / 2 - 250, ofGetHeight() - 200);
 	textBox.setBackgroundColor(ofColor(0, 0, 0, 220));
 	textBox.setTextColor(ofColor(255, 255, 0));
 	textBox.setBorderColor(ofColor(255, 255, 255));
 	textBox.setBorderWidth(3.0f);
 	showTextBox = false;
+
+	// setup all text elements
+	try {
+		menu_button_font.load("fonts/ArialMedium.ttf", 32);
+		menu_title_font.load("fonts/PapyrusBold.ttf", 96);
+		menu_caption_font.load("fonts/ArialMedium.ttf", 14);
+		menu_background.load("images/menu_bg.jpg");
+		dialog_font.load("fonts/ArialMedium.ttf", 24);
+	}
+	catch (...) {
+		ofLogError() << "Text elements could not be loaded. Please check bin/data/fonts and bin/data/images.";
+	}
+
+	// TESTING COLLISION FUNCTIONALITY
+
+	// a floor plane
+	ofPlanePrimitive planeMesh;
+	planeMesh.set(1000, 1000); // Large floor
+	planeMesh.setResolution(2, 2);
+	// flat on the ground
+	GameObject* floor = new GameObject(planeMesh.getMesh(), glm::vec3(0, -50, 0), 1.0f);
+	floor->setOrientation(glm::angleAxis(glm::radians(-90.0f), glm::vec3(1, 0, 0)));
+	wall_objects_vec.push_back(floor);
+
+	// a generic box wall
+	ofBoxPrimitive boxMesh;
+	boxMesh.set(100); // 100x100x100 box
+	GameObject* box = new GameObject(boxMesh.getMesh(), glm::vec3(200, 0, 200), 1.0f);
+	wall_objects_vec.push_back(box);
+
+	// setup with player
+	player->setWalls(&wall_objects_vec);
+	
 }
 
 
@@ -148,18 +161,31 @@ void ofApp::setupGameplayGameState(void) {
 void ofApp::exit(void) {
 
 	delete player;
+	delete lightingShader;
+	delete skyBoxShader;
+	delete rbc;
+	delete redBloodCell;
 
 	for (int i = 0; i < opposition_vec.size(); ++i) {
 		delete opposition_vec[i];
 	}
+	opposition_vec.clear();
 
 	for (int i = 0; i < checkpoint_vec.size(); ++i) {
 		delete checkpoint_vec[i];
 	}
+	checkpoint_vec.clear();
 
 	for (int i = 0; i < power_up_vec.size(); ++i) {
 		delete power_up_vec[i];
 	}
+	power_up_vec.clear();
+
+	for (GameObject* obj : wall_objects_vec) {
+		delete obj;
+	}
+	wall_objects_vec.clear();
+
 }
 
 
@@ -243,12 +269,12 @@ void ofApp::update() {
 
 	// -------------------- GAME OVER GAME STATE ---------------------------
 	else if (game_state == 2) {
-		// to-do
+		// idk if this will be necessary
 	}
 
 	// -------------------- GAME WON GAME STATE ---------------------------
 	else if (game_state == 3) {
-		// to-do
+		// idk if this will be necessary
 	}
 
 	//test (make objects move for visualization and testing model/world matrix)
@@ -370,8 +396,6 @@ void ofApp::draw() {
 
 		sphere.setPosition(-50, 300, 10);
 
-		//bUseTexture = false;
-
 		// setup attributes
 
 		lightingShader->setUniformMatrix4f("viewMatrix", player->getCamera().getModelViewMatrix());
@@ -425,14 +449,21 @@ void ofApp::draw() {
 		lightSphere.draw();
 
 		player->draw(lightingShader);
+
 		for (int i = 0; i < opposition_vec.size(); ++i) {
 			opposition_vec[i]->draw(lightingShader);
 		}
+
 		for (int i = 0; i < power_up_vec.size(); ++i) {
 			power_up_vec[i]->draw(lightingShader);
 		}
+
 		for (int i = 0; i < checkpoint_vec.size(); ++i) {
 			checkpoint_vec[i]->draw(lightingShader);
+		}
+
+		for (GameObject* wall : wall_objects_vec) {
+			wall->draw(lightingShader);
 		}
 
 		// rbc
@@ -472,6 +503,8 @@ void ofApp::draw() {
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key) {
+
+	// debug, keys for testing shit
 	if (key == 't' || key == 'T') {
 		bUseTexture = !bUseTexture;
 	}
@@ -589,7 +622,8 @@ void ofApp::mouseExited(int x, int y) {
 
 //--------------------------------------------------------------
 void ofApp::windowResized(int w, int h) {
-
+	screenSpaceEffect.setResolution(w, h);
+	textBox.setPosition(ofGetWidth() / 2 - 250, ofGetHeight() - 200);
 }
 
 

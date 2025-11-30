@@ -1,7 +1,21 @@
 #include "screenSpaceEffect.h"
 
-
+// constructor
 void ScreenSpaceEffect::setup(int width, int height) {
+
+    shader.load("shader/screen_space_quad.vert", "shader/screen_space_quad.frag");
+    if (!shader.isLoaded()) {
+        ofLogError() << "Post-processing shader failed to load!";
+        ofExit();
+    }
+
+    setResolution(width, height);
+
+    inBloodstream = false;
+}
+
+// set the resolution for the fbo and quad, needed when window is resized
+void ScreenSpaceEffect::setResolution(int width, int height) {
     ofFbo::Settings settings;
     settings.width = width;
     settings.height = height;
@@ -10,47 +24,13 @@ void ScreenSpaceEffect::setup(int width, int height) {
     settings.useDepth = true;
     fbo.allocate(settings);
 
-    shader.load("shader/screen_space_quad.vert", "shader/screen_space_quad.frag");
-
-    if (!shader.isLoaded()) {
-        ofLogError() << "Post-processing shader failed to load!";
-        ofExit();
-    }
-
-    /*
-    // Initialize test data
-    for (int i = 0; i < 40; i++) {
-        cdata[i].x = ofRandom(0, width);
-        cdata[i].y = ofRandom(0, height);
-        cdata[i].z = ofRandom(0, 20) * ofRandom(0, 20);
-        ccol[i] = glm::vec3(ofRandom(255), ofRandom(255), ofRandom(255));
-    }
-    */
-
     makeScreenQuad(width, height);
     fbo.getTexture().setTextureWrap(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
-
-    inBloodstream = false;
 }
 
 void ScreenSpaceEffect::begin() {
     fbo.begin();
     ofClear(0, 0, 0, 255);
-
-    /* test stuff
-    if (!perspectiveTest) {
-        ofSetColor(255, 100, 150);
-        for (int i = 0; i < 40; i++) {
-            ofSetColor(ccol[i].x, ccol[i].y, ccol[i].z);
-            ofDrawCircle(cdata[i].x, cdata[i].y, cdata[i].z);
-        }
-    }
-    */
-    //cam.begin();
-    //ofDrawSphere(fbo.getWidth() / 2, fbo.getHeight() / 2, -10, 100);
-    //ofRotateY(45);
-    //ofDrawBox(0, 0, 0, 50);
-    //cam.end();
 }
 
 void ScreenSpaceEffect::end() {

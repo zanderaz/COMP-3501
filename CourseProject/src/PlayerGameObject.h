@@ -29,6 +29,10 @@ public:
 	void draw(ofShader* lightingShader) override;
 	void update(float delta_time) override;
 
+	// collisions
+	inline void setWalls(const vector<GameObject*>* walls_vec) { walls = walls_vec; }
+	void resolveCollisions(void);
+
 	// rotation and movement
 	void roll(float amt);
 	void yaw(float amt);
@@ -46,6 +50,9 @@ protected:
 	float v_drag;
 	float v_max_speed;
 	float gravity;
+
+	// collision params
+	const std::vector<GameObject*>* walls = nullptr;
 
 	// other
 	float radius;

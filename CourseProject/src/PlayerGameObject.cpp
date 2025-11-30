@@ -1,6 +1,5 @@
 #include "PlayerGameObject.h"
 
-
 /*** Constructor ***/
 PlayerGameObject::PlayerGameObject(const ofMesh& mesh, const glm::vec3& position, float scale, MyCustomCamera cam)
 	: GameObject(mesh, position, scale), cam(cam) {
@@ -19,6 +18,10 @@ PlayerGameObject::PlayerGameObject(const ofMesh& mesh, const glm::vec3& position
     radius = 5; // only needed for collision purposess now
     health = 3;
 }
+
+
+/*** Draw the player (empty for 1st person) ***/
+void PlayerGameObject::draw(ofShader* lightingShader) {}
 
 
 /*** Update the player ***/
@@ -80,22 +83,77 @@ void PlayerGameObject::update(float delta_time) {
     }
     velocity.y = glm::clamp(velocity.y, -v_max_speed, v_max_speed);
 
-    // apply velocity to position
+    // apply velocity to position, ensure position does not go inside a wall/box
     position += velocity * delta_time;
+    resolveCollisions();
 
     // keep the player upright (remove roll) every frame
     enforceUpright();
     setPosition(position);
     setOrientation(orientation);
 
-    // camera position
+    // update camera position to match
     cam.setPosition(position);
     cam.setOrientation(orientation);
 }
 
 
-/*** Draw the player (empty for 1st person) ***/
-void PlayerGameObject::draw(ofShader* lightingShader) {}
+/*** resolve any collisions after position is updated ***/
+void PlayerGameObject::resolveCollisions(void) {
+    if (!walls) return;
+
+    for (GameObject* wall : *walls) {
+
+        // transform player position to Wall's Local Space
+        // we use the inverse of the wall's world matrix to go from World -> Local
+        glm::mat4 worldToLocal = glm::inverse(wall->getWorldMatrix());
+        glm::vec3 localPos = glm::vec3(worldToLocal * glm::vec4(position, 1.0f));
+
+        // find the closest point on the wall's bounding box in Local Space
+        // iterate vertices to find min/max bounds (AABB) of the mesh
+        const std::vector<glm::vec3>& verts = wall->getMesh().getVertices();
+        if (verts.empty()) continue;
+
+        glm::vec3 minBound = verts[0];
+        glm::vec3 maxBound = verts[0];
+
+        for (const auto& v : verts) {
+            minBound = glm::min(minBound, v);
+            maxBound = glm::max(maxBound, v);
+        }
+
+        // clamp local player position to the box bounds to find the closest point on the surface/inside
+        glm::vec3 localClosestPoint = glm::clamp(localPos, minBound, maxBound);
+
+        // transform the closest point back to World Space
+        glm::vec3 worldClosestPoint = glm::vec3(wall->getWorldMatrix() * glm::vec4(localClosestPoint, 1.0f));
+
+        // check for collision
+        glm::vec3 collisionVec = position - worldClosestPoint;
+        float distance = glm::length(collisionVec);
+
+        // if distance is less than radius, we are inside/intersecting
+        if (distance < radius) {
+
+            // handle exact overlap (center inside box)
+            if (distance < 0.0001f) {
+                // fallback: push up or back slightly
+                collisionVec = glm::vec3(0, 1, 0);
+                distance = 0.0f;
+            }
+
+            // normalize to get direction
+            glm::vec3 normal = glm::normalize(collisionVec);
+
+            // push player out by the overlap amount
+            float overlap = radius - distance;
+            position += normal * overlap;
+
+            // kill velocity into the wall to prevent sticking
+            velocity -= normal * glm::dot(velocity, normal);
+        }
+    }
+}
 
 
 /*** Rotation methods ***/
@@ -123,6 +181,7 @@ void PlayerGameObject::yaw(float amt) {
 	orientation = orientation * change;
 
 }
+
 void PlayerGameObject::roll(float amt) {
 	glm::quat change = glm::angleAxis(amt, glm::vec3(0, 0, 1));
 	orientation = orientation * change;
