@@ -4,7 +4,7 @@
 PlayerGameObject::PlayerGameObject(const ofMesh& mesh, const glm::vec3& position, float scale, MyCustomCamera cam)
 	: GameObject(mesh, position, scale), cam(cam) {
 
-    // initialize motion params
+    // init all member vars
 	velocity = glm::vec3(0);
     h_accel = 500.f;
     h_drag = 1.5f;
@@ -14,9 +14,11 @@ PlayerGameObject::PlayerGameObject(const ofMesh& mesh, const glm::vec3& position
     v_max_speed = 200.f;
     gravity = 250.f;
 
-    // initialize other params
-    radius = 5; // only needed for collision purposess now
+    radius = 15; // only needed for collision purposes now
     health = 3;
+
+    speed_boost_cd_timer.Start(0.5f); // initial CD, pretty irrelevant
+    speed_boost_on = false;
 }
 
 
@@ -24,14 +26,18 @@ PlayerGameObject::PlayerGameObject(const ofMesh& mesh, const glm::vec3& position
 void PlayerGameObject::draw(ofShader* lightingShader) {}
 
 
-/*** Update the player ***/
+/*** Update the player, all movement related ***/
 void PlayerGameObject::update(float delta_time) {
 
-    // define foward and side vectors, remove y component
+    // check if the speed boost is done with
+    if (speed_boost_active_timer.Finished()) {
+        speed_boost_on = false;
+    }
+
+    // define foward and side vectors, remove y component, normalize
     glm::vec3 forward = getqForward();
     glm::vec3 side = getqSide();
     forward.y = 0.0f; side.y = 0.0f;
-
     if (glm::length2(forward) > 0.0001) {
         forward = glm::normalize(forward);
     }
@@ -57,8 +63,14 @@ void PlayerGameObject::update(float delta_time) {
     // normalize if there is input, push x and z components to velocity
     if (glm::length2(accelDir) > 0.0001) {
         accelDir = glm::normalize(accelDir);
-        velocity.x += accelDir.x * h_accel * delta_time;
-        velocity.z += accelDir.z * h_accel * delta_time;
+        if (speed_boost_on) {
+            velocity.x += accelDir.x * h_accel * SPEED_BOOST_MULT * delta_time;
+            velocity.z += accelDir.z * h_accel * SPEED_BOOST_MULT * delta_time;
+        }
+        else {
+            velocity.x += accelDir.x * h_accel * delta_time;
+            velocity.z += accelDir.z * h_accel * delta_time;
+        }
     }
 
     // handle vertical direction of acceleration 
@@ -77,10 +89,18 @@ void PlayerGameObject::update(float delta_time) {
     // prevent going over speed limits
     glm::vec2 horizontal(velocity.x, velocity.z);
     float horizontal_len = glm::length(horizontal);
-    if (horizontal_len > h_max_speed) {
-        horizontal = (horizontal / horizontal_len) * h_max_speed;
-        velocity.x = horizontal.x; velocity.z = horizontal.y;
+    if (speed_boost_on) {
+        if (horizontal_len > (h_max_speed * SPEED_BOOST_MULT)) {
+            horizontal = (horizontal / horizontal_len) * (h_max_speed * SPEED_BOOST_MULT);   
+        }
     }
+    else {
+        if (horizontal_len > h_max_speed) {
+            horizontal = (horizontal / horizontal_len) * h_max_speed;
+        }
+    }
+    velocity.x = horizontal.x;
+    velocity.z = horizontal.y;
     velocity.y = glm::clamp(velocity.y, -v_max_speed, v_max_speed);
 
     // apply velocity to position, ensure position does not go inside a wall/box
@@ -158,7 +178,6 @@ void PlayerGameObject::resolveCollisions(void) {
 
 /*** Rotation methods ***/
 void PlayerGameObject::pitch(float amt) {
-
     glm::vec3 forward = orientation * glm::vec3(0, 0, -1);
 
     // calculate the current pitch, determine the desired new pitch
@@ -173,13 +192,11 @@ void PlayerGameObject::pitch(float amt) {
     float allowedAmt = newPitch - currentPitch;
     glm::quat change = glm::angleAxis(allowedAmt, glm::vec3(1, 0, 0));
     orientation = orientation * change;
-
 }
 
 void PlayerGameObject::yaw(float amt) {
 	glm::quat change = glm::angleAxis(amt, glm::vec3(0, 1, 0));
 	orientation = orientation * change;
-
 }
 
 void PlayerGameObject::roll(float amt) {
@@ -216,4 +233,12 @@ void PlayerGameObject::enforceUpright() {
     glm::mat3 M(r, u, -f);
     orientation = glm::normalize(glm::quat_cast(M));
 
+}
+
+
+/*** activate the speed boost ability ***/
+void PlayerGameObject::activateSpeedBoost(void) {
+    speed_boost_on = true;
+    speed_boost_active_timer.Start(SPEED_BOOST_DURATION);
+    speed_boost_cd_timer.Start(SPEED_BOOST_CD); // restart cooldown timer
 }

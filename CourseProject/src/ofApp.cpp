@@ -14,6 +14,7 @@ void ofApp::setup() {
 	mouse_sensitivity = 0.001f;
 	last_x = 0.0, last_y = 0.0;
 	is_first_mouse = true;
+	is_muted = false;
 	bloodstream = true; // start in bloodstream
 	boneMarrow = false;
 	game_state = 0; // start on main menu
@@ -41,7 +42,7 @@ void ofApp::setup() {
 	try {
 		background_music.load("sfx/bg_music.mp3");
 		background_music.setLoop(true);
-		background_music.setVolume(0.2f);
+		background_music.setVolume(BG_MUSIC_VOL);
 	}
 	catch (...) {
 		ofLogError() << "Music file could not be loaded. Ensure bin/data/bg_music.mp3 exists.";
@@ -90,20 +91,10 @@ void ofApp::setup() {
 	rbc->setup(25);
 	ofMesh mesh = ofMesh::sphere(25, 100);
 	redBloodCell = new RedBloodCell(rbc, mesh, glm::vec3(20, 200, -20), 1.0f);
-	sse = false;
 	screenSpaceEffect.setup(ofGetWidth(), ofGetHeight());
 
 	// test
 	// opposition_vec.push_back(new EnemyGameObject(power_up_mesh.getMesh(), glm::vec3(500, -200, 0), 1.f));
-
-	// setup the info text box
-	textBox.setup("Welcome to Triple Sicks! Use WASD to move, mouse to look around, and right-click to toggle mouse capture.", &dialog_font, 500.0f);
-	textBox.setSize(550, 150);
-	textBox.setBackgroundColor(ofColor(0, 0, 0, 220));
-	textBox.setTextColor(ofColor(255, 255, 0));
-	textBox.setBorderColor(ofColor(255, 255, 255));
-	textBox.setBorderWidth(3.0f);
-	showTextBox = false;
 
 	// setup all text elements
 	try {
@@ -117,7 +108,17 @@ void ofApp::setup() {
 		ofLogError() << "Text elements could not be loaded. Please check bin/data/fonts and bin/data/images.";
 	}
 
-	// TESTING COLLISION FUNCTIONALITY
+	// setup the info text box
+	textBox.setup("Welcome to Triple Sicks! Use WASD to move, mouse to look around, and right-click to toggle mouse capture.", &dialog_font, 500.0f);
+	textBox.setSize(550, 150);
+	textBox.setBackgroundColor(ofColor(0, 0, 0, 220));
+	textBox.setTextColor(ofColor(255, 255, 0));
+	textBox.setBorderColor(ofColor(255, 255, 255));
+	textBox.setBorderWidth(3.0f);
+	textBox.setPosition(ofGetWidth() / 2 - 250, ofGetHeight() - 200);
+	showTextBox = false;
+
+	// Collision
 
 	// a floor plane
 	ofPlanePrimitive planeMesh;
@@ -356,13 +357,11 @@ void ofApp::draw() {
 	else if (game_state == 1) {
 
 		// everything below (until fbo is ended) will get put in the frame buffer for screen-space effects
-		if (sse) {
-			screenSpaceEffect.setInBloodstream(bloodstream);
-			screenSpaceEffect.begin();
-		}
+		screenSpaceEffect.setInBloodstream(bloodstream);
+		screenSpaceEffect.setSpeedBoostActive(player->isSpeedBoostOn());
+		screenSpaceEffect.begin();
 
 		ofEnableDepthTest();
-
 		player->getCamera().begin();
 
 		// test (skybox)
@@ -397,7 +396,6 @@ void ofApp::draw() {
 		sphere.setPosition(-50, 300, 10);
 
 		// setup attributes
-
 		lightingShader->setUniformMatrix4f("viewMatrix", player->getCamera().getModelViewMatrix());
 		lightingShader->setUniformMatrix4f("modelViewProjectionMatrix", player->getCamera().getModelViewProjectionMatrix());
 		lightingShader->setUniformMatrix4f("projectionMatrix", player->getCamera().getProjectionMatrix());
@@ -479,10 +477,8 @@ void ofApp::draw() {
 		player->getCamera().end();
 		ofDisableDepthTest();
 
-		if (sse) {
-			screenSpaceEffect.end();
-			screenSpaceEffect.draw();
-		}
+		screenSpaceEffect.end();
+		screenSpaceEffect.draw();
 
 		textBox.setVisible(showTextBox);
 		textBox.draw();
@@ -504,12 +500,30 @@ void ofApp::draw() {
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key) {
 
+	// player speed boost
+	if (key == 'e' || key == 'E') {
+		if (player->isSpeedBoostReady()) {
+			player->activateSpeedBoost();
+		}
+	}
+
+	// mute game audio
+	if (key == 'm' || key == 'M') {
+		is_muted = !is_muted;
+		if (is_muted) {
+			background_music.setVolume(0.0);
+		}
+		else {
+			background_music.setVolume(BG_MUSIC_VOL);
+		}
+	}
+
 	// debug, keys for testing shit
 	if (key == 't' || key == 'T') {
 		bUseTexture = !bUseTexture;
 	}
-	if (key == 'e' || key == 'E') {
-		sse = !sse;
+	if (key == 'f' || key == 'F') {
+		bloodstream = !bloodstream;
 	}
 	if (key == 'h' || key == 'H') { // Help key
 		showTextBox = !showTextBox;
