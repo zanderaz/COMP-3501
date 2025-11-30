@@ -35,7 +35,6 @@ public:
 	void resolveCollisions(void);
 
 	// rotation and movement
-	void update(float delta_time) override;
 	void roll(float amt);
 	void yaw(float amt);
 	void pitch(float amt);
@@ -44,13 +43,6 @@ public:
 	// speed boost related
 	inline bool isSpeedBoostReady(void) { return speed_boost_cd_timer.Finished(); }
 	void activateSpeedBoost(void);
-	
-	// collisions
-	inline void setWalls(vector<GameObject*>* walls_vec) { walls = walls_vec; }
-	void resolveCollisions(void);
-
-	// other
-	void draw(ofShader* lightingShader) override;
 	
 protected:
 
