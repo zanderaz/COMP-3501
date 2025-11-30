@@ -225,7 +225,7 @@ void ofApp::update() {
 				// Teleport player and change environment
 				handleCheckpointCollision(checkpoint);
 
-				// Remove the checkpoint (optional - if you want one-time use)
+				// Remove the checkpoint
 				delete checkpoint;
 				checkpoint_vec.erase(checkpoint_vec.begin() + i);
 				break; // Exit loop since we modified the vector
@@ -515,7 +515,7 @@ void ofApp::mouseMoved(int x, int y) {
 		float yaw_amt = static_cast<float>(-delta_x) * mouse_sensitivity; // left -> +yaw
 		float pitch_amt = static_cast<float>(-delta_y) * mouse_sensitivity; // up -> +pitch
 
-		// LOWKEY WE NEED PROPER PITCH CLAMPING however I cannot figure it out so fuck it (js don't flick straight up/down)
+		// pitch is clamped within the function to prevent vector singularity (i.e. world up vector and player foward vector match up)
 		player->pitch(pitch_amt);
 		player->yaw(yaw_amt);
 
@@ -645,6 +645,7 @@ void ofApp::recenterCursorToWindowCenter() {
 	}
 }
 
+// Helper method, handles what should happen when the player hits a checkpoint
 void ofApp::handleCheckpointCollision(CheckpointGameObject* checkpoint) {
 
 	if (bloodstream) {
