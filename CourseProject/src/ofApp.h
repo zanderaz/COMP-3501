@@ -43,31 +43,27 @@ public:
 	static GLFWwindow* getGLFW(void);
 	void setRawMouseCapture(bool on);
 	void recenterCursorToWindowCenter(void);
-
 	void handleCheckpointCollision(CheckpointGameObject* checkpoint);
 
 private:
-
-	MyCustomCamera cam;
-
-	// mouse-look related
-	bool mouse_capture_flag;
-	float mouse_sensitivity; // radians per pixel
-	double last_x;
-	double last_y;
-	bool is_first_mouse;
 
 	// game object collections
 	PlayerGameObject* player;
 	vector<EnemyGameObject*> opposition_vec;
 	vector<CheckpointGameObject*> checkpoint_vec;
 	vector<PowerUpObject*> power_up_vec;
+	vector<GameObject*> wall_objects_vec;
+
+	// mouse-look and camera related
+	MyCustomCamera cam;
+	bool mouse_capture_flag;
+	float mouse_sensitivity; // radians per pixel
+	double last_x;
+	double last_y;
+	bool is_first_mouse;
   
 	// track time
 	float time_elapsed;
-
-	// current game state ~ 0 = main menu, 1 = gameplay, 2 = game over, 3 = game won 
-	unsigned short int game_state;
 
 	// sound
 	ofSoundPlayer background_music;
@@ -81,6 +77,19 @@ private:
 	ofShader* lightingShader;
 	ofShader* skyBoxShader;
 
+	// main-menu fonts and geometry
+	ofTrueTypeFont menu_button_font;
+	ofTrueTypeFont menu_title_font;
+	ofTrueTypeFont menu_caption_font;
+	ofTrueTypeFont dialog_font;
+	ofImage menu_background;
+	ofRectangle start_button_rect;
+	ofRectangle quit_button_rect;
+
+	// game state indicators
+	unsigned short int game_state; // 0 = main menu, 1 = gameplay, 2 = game over, 3 = game won 
+	bool bloodstream, boneMarrow;
+
 	// test (objects, orbit for light source, boolean to toggle texture)
 	ofIcoSpherePrimitive sphere, lightSphere, skySphere;
 	ofImage texture, skyTexture;
@@ -92,18 +101,6 @@ private:
 	ScreenSpaceEffect screenSpaceEffect;
 	TextBox textBox;
 	bool showTextBox;
-
-	// main-menu fonts and geometry
-	ofTrueTypeFont menu_button_font;
-	ofTrueTypeFont menu_title_font;
-	ofTrueTypeFont menu_caption_font;
-	ofTrueTypeFont dialog_font;
-	ofImage menu_background;
-	ofRectangle start_button_rect;
-	ofRectangle quit_button_rect;
-
-	// world state
-	bool bloodstream, boneMarrow;
 
 	// ----------------- Constants -----------------
 	const string TITLE_TEXT = "Triple Sicks";
