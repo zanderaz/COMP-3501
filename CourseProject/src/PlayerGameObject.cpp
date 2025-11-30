@@ -72,11 +72,11 @@ void PlayerGameObject::update(float delta_time) {
     velocity.y -= velocity.y * v_drag * delta_time;
 
     // prevent going over speed limits
-    glm::vec2 hz(velocity.x, velocity.z);
-    float hz_len = glm::length(hz);
-    if (hz_len > h_max_speed) {
-        hz = (hz / hz_len) * h_max_speed;
-        velocity.x = hz.x; velocity.z = hz.y;
+    glm::vec2 horizontal(velocity.x, velocity.z);
+    float horizontal_len = glm::length(horizontal);
+    if (horizontal_len > h_max_speed) {
+        horizontal = (horizontal / horizontal_len) * h_max_speed;
+        velocity.x = horizontal.x; velocity.z = horizontal.y;
     }
     velocity.y = glm::clamp(velocity.y, -v_max_speed, v_max_speed);
 
@@ -100,10 +100,24 @@ void PlayerGameObject::draw(ofShader* lightingShader) {}
 
 /*** Rotation methods ***/
 void PlayerGameObject::pitch(float amt) {
-	glm::quat change = glm::angleAxis(amt, glm::vec3(1, 0, 0));
-	orientation = orientation * change;
+
+    glm::vec3 forward = orientation * glm::vec3(0, 0, -1);
+
+    // calculate the current pitch, determine the desired new pitch
+    float currentPitch = asin(glm::clamp(forward.y, -1.0f, 1.0f));
+    float newPitch = currentPitch + amt;
+
+    // clamp the new pitch to a safe range, prevents the forward vector from ever aligning perfectly with the world up vector
+    float maxPitch = glm::radians(86.0f);
+    newPitch = glm::clamp(newPitch, -maxPitch, maxPitch);
+
+    // calculate the actual allowed rotation delta, apply clamped rotation
+    float allowedAmt = newPitch - currentPitch;
+    glm::quat change = glm::angleAxis(allowedAmt, glm::vec3(1, 0, 0));
+    orientation = orientation * change;
 
 }
+
 void PlayerGameObject::yaw(float amt) {
 	glm::quat change = glm::angleAxis(amt, glm::vec3(0, 1, 0));
 	orientation = orientation * change;
