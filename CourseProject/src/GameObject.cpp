@@ -4,11 +4,13 @@ GameObject::GameObject(const ofMesh& mesh, const glm::vec3& position, float scal
 	: mesh(mesh), position(position), scale(scale) {
 	orientation = glm::quat(1, 0, 0, 0);
 	colour = glm::vec3(255, 255, 255);
+	visible = true;
 }
 
 // universal draw function
 void GameObject::draw(ofShader* lightingShader) {
 	glm::mat4 world = getWorldMatrix();
+	if (!visible) return;
 
 	lightingShader->setUniformMatrix4f("worldMatrix", world);
 	lightingShader->setUniform3f("objectColor", colour);

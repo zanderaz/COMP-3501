@@ -90,17 +90,25 @@ private:
 	unsigned short int game_state; // 0 = main menu, 1 = gameplay, 2 = game over, 3 = game won 
 	bool bloodstream, boneMarrow;
 
+	// textures
+	ofImage texture, skyTexture, wallTexture;
+
 	// test (objects, orbit for light source, boolean to toggle texture)
 	ofIcoSpherePrimitive sphere, lightSphere, skySphere;
-	ofImage texture, skyTexture;
 	float orbitSpeed, orbitRadius, orbitAngle;
 	bool bUseTexture = true;
 	RedBloodCellParticleSystem* rbc;
 	RedBloodCell* redBloodCell;
+
 	bool sse;
 	ScreenSpaceEffect screenSpaceEffect;
+
 	TextBox textBox;
 	bool showTextBox;
+
+	void createWalls();
+	void createWallsSection1();
+	void createWallsSection2();
 
 	// ----------------- Constants -----------------
 	const string TITLE_TEXT = "Triple Sicks";

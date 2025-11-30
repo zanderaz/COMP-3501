@@ -18,6 +18,7 @@ public:
 	inline const glm::quat& getOrientation() const { return orientation; }
 	inline const ofMesh& getMesh() const { return mesh; }
 	inline const glm::vec3& getColour() const { return colour; }
+	inline const bool isVisible() const { return visible; }
 
 	// setters
 	inline void setPosition(const glm::vec3& pos) { position = pos; }
@@ -25,6 +26,7 @@ public:
 	inline void setOrientation(const glm::quat& q) { orientation = q; }
 	inline void setMesh(const ofMesh& m) { mesh = m; }
 	inline void setColour(const glm::vec3& c) { colour = c; }
+	inline void setVisible(bool v) { visible = v; }
 	
 	// render and logic specific
 	virtual void draw(ofShader* lightingShader);
@@ -44,9 +46,8 @@ protected:
 	glm::vec3 BASE_SIDE = glm::vec3(1, 0, 0);
 	glm::vec3 BASE_UP = glm::vec3(0, 1, 0);
 	glm::vec3 BASE_FORWARD = glm::vec3(0, 0, 1);
-
-	
 	ofImage texture;
+	bool visible;
 
 };
 

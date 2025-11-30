@@ -30,7 +30,7 @@ public:
 	void update(float delta_time) override;
 
 	// collisions
-	inline void setWalls(const vector<GameObject*>* walls_vec) { walls = walls_vec; }
+	inline void setWalls(vector<GameObject*>* walls_vec) { walls = walls_vec; }
 	void resolveCollisions(void);
 
 	// rotation and movement
@@ -52,7 +52,7 @@ protected:
 	float gravity;
 
 	// collision params
-	const std::vector<GameObject*>* walls = nullptr;
+	std::vector<GameObject*>* walls = nullptr;
 
 	// other
 	float radius;
