@@ -18,7 +18,8 @@ public:
 	inline const glm::vec3& getVelocity() const { return velocity; }
 	inline const int getHealth() const { return health; }
 	inline MyCustomCamera& getCamera() { return cam; }
-	inline Timer& getInvincibilityTimer() { return invincibilityTimer; }
+	inline Timer& getInvincibilityTimer() { return invincibility_timer; }
+	inline const bool isSpeedBoostOn(void) { return speed_boost_on; }
 
 	// setters
 	inline void setRadius(float r) { radius = r; }
@@ -34,11 +35,23 @@ public:
 	void resolveCollisions(void);
 
 	// rotation and movement
+	void update(float delta_time) override;
 	void roll(float amt);
 	void yaw(float amt);
 	void pitch(float amt);
 	void enforceUpright(void);
 
+	// speed boost related
+	inline bool isSpeedBoostReady(void) { return speed_boost_cd_timer.Finished(); }
+	void activateSpeedBoost(void);
+	
+	// collisions
+	inline void setWalls(vector<GameObject*>* walls_vec) { walls = walls_vec; }
+	void resolveCollisions(void);
+
+	// other
+	void draw(ofShader* lightingShader) override;
+	
 protected:
 
 	// motion params
@@ -52,12 +65,20 @@ protected:
 	float gravity;
 
 	// collision params
-	std::vector<GameObject*>* walls = nullptr;
+	vector<GameObject*>* walls = nullptr;
+
+	// speed boost related
+	Timer speed_boost_cd_timer;
+	Timer speed_boost_active_timer;
+	bool speed_boost_on;
+	const float SPEED_BOOST_DURATION = 5.0f;
+	const float SPEED_BOOST_CD = 15.0f;
+	const float SPEED_BOOST_MULT = 2.0f;
 
 	// other
 	float radius;
 	int health;
-	Timer invincibilityTimer;
+	Timer invincibility_timer;
 	MyCustomCamera cam;
 
 };

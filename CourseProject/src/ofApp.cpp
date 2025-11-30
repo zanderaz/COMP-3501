@@ -14,6 +14,7 @@ void ofApp::setup() {
 	mouse_sensitivity = 0.001f;
 	last_x = 0.0, last_y = 0.0;
 	is_first_mouse = true;
+	is_muted = false;
 	bloodstream = true; // start in bloodstream
 	boneMarrow = false;
 	game_state = 0; // start on main menu
@@ -43,7 +44,7 @@ void ofApp::setup() {
 	try {
 		background_music.load("sfx/bg_music.mp3");
 		background_music.setLoop(true);
-		background_music.setVolume(0.2f);
+		background_music.setVolume(BG_MUSIC_VOL);
 	}
 	catch (...) {
 		ofLogError() << "Music file could not be loaded. Ensure bin/data/bg_music.mp3 exists.";
@@ -92,7 +93,6 @@ void ofApp::setup() {
 	rbc->setup(25);
 	ofMesh mesh = ofMesh::sphere(25, 100);
 	redBloodCell = new RedBloodCell(rbc, mesh, glm::vec3(20, 200, -20), 1.0f);
-	sse = false;
 	screenSpaceEffect.setup(ofGetWidth(), ofGetHeight());
 
 	// test
@@ -362,13 +362,11 @@ void ofApp::draw() {
 	else if (game_state == 1) {
 
 		// everything below (until fbo is ended) will get put in the frame buffer for screen-space effects
-		if (sse) {
-			screenSpaceEffect.setInBloodstream(bloodstream);
-			screenSpaceEffect.begin();
-		}
+		screenSpaceEffect.setInBloodstream(bloodstream);
+		screenSpaceEffect.setSpeedBoostActive(player->isSpeedBoostOn());
+		screenSpaceEffect.begin();
 
 		ofEnableDepthTest();
-
 		player->getCamera().begin();
 
 		// test (skybox)
@@ -403,7 +401,6 @@ void ofApp::draw() {
 		sphere.setPosition(-50, 300, 10);
 
 		// setup attributes
-
 		lightingShader->setUniformMatrix4f("viewMatrix", player->getCamera().getModelViewMatrix());
 		lightingShader->setUniformMatrix4f("modelViewProjectionMatrix", player->getCamera().getModelViewProjectionMatrix());
 		lightingShader->setUniformMatrix4f("projectionMatrix", player->getCamera().getProjectionMatrix());
@@ -488,10 +485,8 @@ void ofApp::draw() {
 		player->getCamera().end();
 		ofDisableDepthTest();
 
-		if (sse) {
-			screenSpaceEffect.end();
-			screenSpaceEffect.draw();
-		}
+		screenSpaceEffect.end();
+		screenSpaceEffect.draw();
 
 		textBox.draw();
 
@@ -512,12 +507,30 @@ void ofApp::draw() {
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key) {
 
+	// player speed boost
+	if (key == 'e' || key == 'E') {
+		if (player->isSpeedBoostReady()) {
+			player->activateSpeedBoost();
+		}
+	}
+
+	// mute game audio
+	if (key == 'm' || key == 'M') {
+		is_muted = !is_muted;
+		if (is_muted) {
+			background_music.setVolume(0.0);
+		}
+		else {
+			background_music.setVolume(BG_MUSIC_VOL);
+		}
+	}
+
 	// debug, keys for testing shit
 	if (key == 't' || key == 'T') {
 		bUseTexture = !bUseTexture;
 	}
-	if (key == 'e' || key == 'E') {
-		sse = !sse;
+	if (key == 'f' || key == 'F') {
+		bloodstream = !bloodstream;
 	}
 	if (key == 'h' || key == 'H') {
 		textBox.showTemporarily(3.0f);
