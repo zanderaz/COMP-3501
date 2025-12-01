@@ -14,6 +14,7 @@
 #include "redBloodCellParticleSystem.h"
 #include "screenSpaceEffect.h"
 #include "TextBox.h"
+#include "EnemySpawner.h"
 
 class ofApp : public ofBaseApp {
 
@@ -50,6 +51,7 @@ public:
 	void createWallsSection1();
 	void createWallsSection2();
 	void createWallsSection3();
+	void createWallsSection4();
 	void createVeins();
 
 private:
@@ -82,6 +84,7 @@ private:
 	// re-used meshes
 	ofSpherePrimitive power_up_mesh;
 	ofSpherePrimitive player_mesh;
+	ofSpherePrimitive bulletHellEnemyMesh;
 
 	// shader
 	ofShader* lightingShader;
@@ -117,6 +120,13 @@ private:
 	TextBox textBox;
 	bool showTextBox;
 	bool show_interact_tip;
+
+	// for enemy spawning
+	EnemySpawner enemySpawner;
+	bool bloodBulletHellActive;
+	Timer bloodBulletHellTimer;
+	void startBloodBulletHell(float duration = 30.0f);
+	void endBloodBulletHell();
 
 	// ----------------- Constants -----------------
 	const unsigned short int GAME_FPS = 144;

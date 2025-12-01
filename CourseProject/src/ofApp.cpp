@@ -107,7 +107,7 @@ void ofApp::setup() {
 	screenSpaceEffect.setup(ofGetWidth(), ofGetHeight());
 
 	// test
-	// opposition_vec.push_back(new EnemyGameObject(power_up_mesh.getMesh(), glm::vec3(500, -200, 0), 1.f));
+	// opposition_vec.push_back(new EnemyGameObject(power_up_mesh.getMesh(), glm::vec3(250, 0, 0), 1.f));
 
 	// setup all text elements
 	try {
@@ -134,6 +134,11 @@ void ofApp::setup() {
 	// create collidable geometry, store in player so collision resolving works properly
 	createWalls();
 	player->setWalls(&wall_objects_vec);
+
+	// bullet hell spawn stuff
+	bulletHellEnemyMesh.set(30, 100);
+	enemySpawner.setup(&bulletHellEnemyMesh.getMesh());
+	bloodBulletHellActive = false;
 
 	// setup the interactable objects
 	glm::vec3 vein1_pos(600, 50, 130);
@@ -213,6 +218,8 @@ void ofApp::exit(void) {
 	}
 	interactables_vec.clear();
 
+	enemySpawner.clearEnemies();
+
 }
 
 
@@ -250,9 +257,11 @@ void ofApp::update() {
 			player->setColour(glm::vec3(255.0f));
 		}
 
-		/*** ENEMY HANDLING ***/
+		/*** ENEMY HANDLING (OLD) ***/
 
 		// updates for opps
+		
+		/*
 		for (int i = 0; i < opposition_vec.size(); ++i) {
 			EnemyGameObject* enemy = opposition_vec[i];
 			enemy->faceTowards(player->getPosition());
@@ -264,11 +273,23 @@ void ofApp::update() {
 
 				// handle damage
 				player->getInvincibilityTimer().Start(2.0f);
+				player->setColour(glm::vec3(255.0f, 0.0f, 50.0f));
+				player->setHealth(player->getHealth() - 1);
 				// add SSE or other indicator that damage occurred
 
 				// clean up enemy
 				delete enemy;
 				opposition_vec.erase(opposition_vec.begin() + i);
+			}
+		}
+		*/
+
+		// blood bullet hell stuff (all collision detection and deletion and allat is handled in the class by passing in the player)
+		if (bloodBulletHellActive) {
+			enemySpawner.update(delta_time, player);
+			// end after certain amount of time
+			if (bloodBulletHellTimer.FinishedAndStop()) {
+				endBloodBulletHell();
 			}
 		}
 
@@ -486,6 +507,9 @@ void ofApp::draw() {
 			opposition_vec[i]->draw(lightingShader);
 		}
 
+		// keep order like this bc its kinda odd
+		enemySpawner.draw(lightingShader);
+
 		for (int i = 0; i < power_up_vec.size(); ++i) {
 			power_up_vec[i]->draw(lightingShader);
 		}
@@ -512,6 +536,8 @@ void ofApp::draw() {
 		// rbc
 		redBloodCell->draw(lightingShader);
 
+		//enemySpawner.draw(lightingShader);
+
 		lightingShader->end();
 
 		player->getCamera().end();
@@ -537,7 +563,8 @@ void ofApp::draw() {
 		ofDrawBitmapString("X-pos: " + to_string(player->getPosition().x), glm::vec2(30, 50));
 		ofDrawBitmapString("Y-pos: " + to_string(player->getPosition().y), glm::vec2(30, 60));
 		ofDrawBitmapString("Z-pos: " + to_string(player->getPosition().z), glm::vec2(30, 70));
-		ofDrawBitmapString("Veins Infected: " + to_string(veins_infected_count) + " / 3", glm::vec2(30, 90));
+		ofDrawBitmapString("Health: " + to_string(player->getHealth()), glm::vec2(30, 90));
+		ofDrawBitmapString("Veins Infected: " + to_string(veins_infected_count) + " / 3", glm::vec2(30, 110));
 
 	}
 
@@ -604,6 +631,12 @@ void ofApp::keyPressed(int key) {
 	}
 	if (key == 'h' || key == 'H') {
 		textBox.showTemporarily(4.0f);
+	}
+
+	if (key == 'g' || key == 'G') {
+		if (!bloodBulletHellActive) {
+			startBloodBulletHell(30.0f);
+		}
 	}
 }
 
@@ -797,10 +830,13 @@ void ofApp::createWalls() {
 	createWallsSection1();
 	createWallsSection2();
 	createWallsSection3();
+	createWallsSection4();
 	createVeins();
 
+	/*
 	ofLog() << "Created walls: " << wall_objects_vec.size() << " objects";
 	ofLog() << "Player starts at position: " << player->getPosition();
+	*/
 }
 
 // first room and exit
@@ -819,7 +855,7 @@ void ofApp::createWallsSection1() {
 
 	// floor
 	ofBoxPrimitive floorMesh;
-	floorMesh.set(10000, 5, 10000);
+	floorMesh.set(20000, 5, 20000);
 	GameObject* floor = new GameObject(floorMesh.getMesh(), glm::vec3(0, -50, 0), 1.0f);
 	wall_objects_vec.push_back(floor);
 
@@ -872,7 +908,7 @@ void ofApp::createWallsSection1() {
 
 	// big ceiling for now
 	ofBoxPrimitive ceilingMesh;
-	ceilingMesh.set(5000, 5, 5000);
+	ceilingMesh.set(10000, 5, 10000);
 	GameObject* ceiling = new GameObject(ceilingMesh.getMesh(), glm::vec3(0, wallHeight - 50, 0), 1.0f);
 	ceiling->setVisible(false);
 	wall_objects_vec.push_back(ceiling);
@@ -1010,7 +1046,57 @@ void ofApp::createWallsSection3() {
 	sideWall7->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
 	wall_objects_vec.push_back(sideWall7);
 
+	sideWallMesh.set(250, wallHeight, wallThickness);
+	GameObject* sideWall8 = new GameObject(sideWallMesh.getMesh(), glm::vec3(-2250, wallHeight / 2 - 50, 250), 1.0f);
+	wall_objects_vec.push_back(sideWall8);
 }
+
+// boss room
+void ofApp::createWallsSection4() {
+
+	// wall dimensions
+	float wallThickness = 20.0f;
+	float wallHeight = 300.0f;
+
+	// hallway dimensions
+	float hallwayLength = 400.0f;
+	float hallwayWidth = 200.0f;
+
+	// entrance split walls
+	ofBoxPrimitive entranceWalls;
+	entranceWalls.set(600, wallHeight, wallThickness);
+	GameObject* entranceWall1 = new GameObject(entranceWalls.getMesh(), glm::vec3(-2980, wallHeight / 2 - 50, 530), 1.0f);
+	entranceWall1->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(entranceWall1);
+
+	GameObject* entranceWall2 = new GameObject(entranceWalls.getMesh(), glm::vec3(-2980, wallHeight / 2 - 50, 1425), 1.0f);
+	entranceWall2->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(entranceWall2);
+
+	// side walls
+	ofBoxPrimitive sideWallMesh;
+	sideWallMesh.set(1000, wallHeight, wallThickness);
+	GameObject* sideWall1 = new GameObject(sideWallMesh.getMesh(), glm::vec3(-3480, wallHeight / 2 - 50, 1700), 1.0f);
+	wall_objects_vec.push_back(sideWall1);
+
+	GameObject* sideWall2 = new GameObject(sideWallMesh.getMesh(), glm::vec3(-3480, wallHeight / 2 - 50, 225), 1.0f);
+	wall_objects_vec.push_back(sideWall2);
+
+	// back wall
+	ofBoxPrimitive backWallMesh;
+	backWallMesh.set(1600, wallHeight, wallThickness);
+	GameObject* backWall = new GameObject(backWallMesh.getMesh(), glm::vec3(-3980, wallHeight / 2 - 50, 955), 1.0f);
+	backWall->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(backWall);
+
+	/*
+	ofBoxPrimitive obstacle1Mesh;
+	obstacle1Mesh.set(50, 50, 50);
+	GameObject* obstacle1 = new GameObject(obstacle1Mesh.getMesh(), glm::vec3(-3040, - 25, 290), 1.0f);
+	wall_objects_vec.push_back(obstacle1);
+	*/
+}
+
 
 // create veins that can be infected
 void ofApp::createVeins(void) {
@@ -1044,4 +1130,19 @@ void ofApp::createVeins(void) {
 	vein3->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 0, 1)));
 	wall_objects_vec.push_back(vein3);
 
+}
+
+// functions to start/end blood bullet hell
+void ofApp::startBloodBulletHell(float duration) {
+	bloodBulletHellActive = true;
+	bloodBulletHellTimer.Start(duration);
+	enemySpawner.startSpawning(0.25f);
+	ofLog() << "Bullet Hell Start";
+}
+
+void ofApp::endBloodBulletHell() {
+	bloodBulletHellActive = false;
+	enemySpawner.stopSpawning();
+	enemySpawner.clearEnemies();
+	ofLog() << "Bullet Hell End";
 }
