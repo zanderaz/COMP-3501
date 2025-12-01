@@ -709,17 +709,19 @@ void ofApp::handleCheckpointCollision(CheckpointGameObject* checkpoint) {
 	}
 }
 
+// create walls for the play area
 void ofApp::createWalls() {
 	createWallsSection1();
 	createWallsSection2();
-	//createWallsSection3();
+	createWallsSection3();
 
 	ofLog() << "Created walls: " << wall_objects_vec.size() << " objects";
 	ofLog() << "Player starts at position: " << player->getPosition();
 }
 
-// create walls for the play area
 void ofApp::createWallsSection1() {
+	// first room and exit
+
 	// wall dimensions
 	float wallThickness = 20.0f;
 	float wallHeight = 300.0f;
@@ -733,11 +735,9 @@ void ofApp::createWallsSection1() {
 
 	// floor
 	ofBoxPrimitive floorMesh;
-	floorMesh.set(roomSize * 6, 5, roomSize * 6);
+	floorMesh.set(10000, 5, 10000);
 	GameObject* floor = new GameObject(floorMesh.getMesh(), glm::vec3(0, -50, 0), 1.0f);
 	wall_objects_vec.push_back(floor);
-
-	// ===== ROOM 1 ======
 
 	// starting room
 
@@ -788,19 +788,18 @@ void ofApp::createWallsSection1() {
 
 	// big ceiling for now
 	ofBoxPrimitive ceilingMesh;
-	ceilingMesh.set(roomSize*4, 5, roomSize*4);
+	ceilingMesh.set(5000, 5, 5000);
 	GameObject* ceiling = new GameObject(ceilingMesh.getMesh(), glm::vec3(0, wallHeight - 50, 0), 1.0f);
 	ceiling->setVisible(false);
 	wall_objects_vec.push_back(ceiling);
 }
 
 void ofApp::createWallsSection2() {
+	// starts at hallways out of first room
+
 	// wall dimensions
 	float wallThickness = 20.0f;
 	float wallHeight = 300.0f;
-
-	// room dimensions
-	//float roomSize = 800.0f;
 
 	// hallway dimensions
 	float hallwayLength = 400.0f;
@@ -833,3 +832,95 @@ void ofApp::createWallsSection2() {
 	wall_objects_vec.push_back(rightSideWall);
 }
 
+void ofApp::createWallsSection3() {
+	// starts at diagonal hallway to the right of start
+	float wallThickness = 20.0f;
+	float wallHeight = 300.0f;
+
+	// hallway dimensions
+	float hallwayLength = 400.0f;
+	float hallwayWidth = 200.0f;
+
+	// diagonal hallway to the right of start
+	ofBoxPrimitive diagonalWallMesh;
+	diagonalWallMesh.set(525, wallHeight, wallThickness);
+	GameObject* diagonalWall1 = new GameObject(diagonalWallMesh.getMesh(), glm::vec3(-980, wallHeight / 2 - 50, 985), 1.0f);
+	diagonalWall1->setOrientation(glm::angleAxis(glm::radians(45.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(diagonalWall1);
+
+	diagonalWallMesh.set(350, wallHeight, wallThickness);
+	GameObject* diagonalWall2 = new GameObject(diagonalWallMesh.getMesh(), glm::vec3(-1405, wallHeight / 2 - 50, 705), 1.0f);
+	diagonalWall2->setOrientation(glm::angleAxis(glm::radians(45.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(diagonalWall2);
+
+	// side hallway before junction
+	diagonalWallMesh.set(685, wallHeight, wallThickness);
+	GameObject* diagonalWall3 = new GameObject(diagonalWallMesh.getMesh(), glm::vec3(-1530, wallHeight / 2 - 50, 345), 1.0f);
+	diagonalWall3->setOrientation(glm::angleAxis(glm::radians(135.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(diagonalWall3);
+
+	diagonalWallMesh.set(700, wallHeight, wallThickness);
+	GameObject* diagonalWall4 = new GameObject(diagonalWallMesh.getMesh(), glm::vec3(-1355, wallHeight / 2 - 50, 155), 1.0f);
+	diagonalWall4->setOrientation(glm::angleAxis(glm::radians(135.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(diagonalWall4);
+
+	diagonalWallMesh.set(685, wallHeight, wallThickness);
+	GameObject* diagonalWall5 = new GameObject(diagonalWallMesh.getMesh(), glm::vec3(-1875, wallHeight / 2 - 50, -200), 1.0f);
+	diagonalWall5->setOrientation(glm::angleAxis(glm::radians(110.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(diagonalWall5);
+
+	diagonalWallMesh.set(700, wallHeight, wallThickness);
+	GameObject* diagonalWall6 = new GameObject(diagonalWallMesh.getMesh(), glm::vec3(-1715, wallHeight / 2 - 50, -410), 1.0f);
+	diagonalWall6->setOrientation(glm::angleAxis(glm::radians(110.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(diagonalWall6);
+
+	// junction
+	ofBoxPrimitive junctionWallMesh;
+	junctionWallMesh.set(1500, wallHeight, wallThickness);
+	GameObject* junctionWall1 = new GameObject(junctionWallMesh.getMesh(), glm::vec3(-2225, wallHeight / 2 - 50, 1125), 1.0f);
+	wall_objects_vec.push_back(junctionWall1);
+
+	junctionWallMesh.set(1000, wallHeight, wallThickness);
+	GameObject* junctionWall2 = new GameObject(junctionWallMesh.getMesh(), glm::vec3(-1475, wallHeight / 2 - 50, 1625), 1.0f);
+	junctionWall2->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(junctionWall2);
+	
+	// left side of junction
+	ofBoxPrimitive sideWallMesh;
+
+	sideWallMesh.set(475, wallHeight, wallThickness);
+	GameObject* sideWall1 = new GameObject(sideWallMesh.getMesh(), glm::vec3(-925, wallHeight / 2 - 50, 1175), 1.0f);
+	wall_objects_vec.push_back(sideWall1);
+
+	sideWallMesh.set(775, wallHeight, wallThickness);
+	GameObject* sideWall2 = new GameObject(sideWallMesh.getMesh(), glm::vec3(-1075, wallHeight / 2 - 50, 1525), 1.0f);
+	wall_objects_vec.push_back(sideWall2);
+	
+	sideWallMesh.set(750, wallHeight, wallThickness);
+	GameObject* sideWall3 = new GameObject(sideWallMesh.getMesh(), glm::vec3(-700, wallHeight / 2 - 50, 1425), 1.0f);
+	sideWall3->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(sideWall3);
+
+	// right side of junction
+
+	sideWallMesh.set(600, wallHeight, wallThickness);
+	GameObject* sideWall4 = new GameObject(sideWallMesh.getMesh(), glm::vec3(-1825, wallHeight / 2 - 50, 825), 1.0f);
+	wall_objects_vec.push_back(sideWall4);
+
+	sideWallMesh.set(600, wallHeight, wallThickness);
+	GameObject* sideWall5 = new GameObject(sideWallMesh.getMesh(), glm::vec3(-2675, wallHeight / 2 - 50, 825), 1.0f);
+	wall_objects_vec.push_back(sideWall5);
+
+	// right corridor out right side of junction
+
+	sideWallMesh.set(600, wallHeight, wallThickness);
+	GameObject* sideWall6 = new GameObject(sideWallMesh.getMesh(), glm::vec3(-2125, wallHeight / 2 - 50, 525), 1.0f);
+	sideWall6->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(sideWall6);
+
+	sideWallMesh.set(600, wallHeight, wallThickness);
+	GameObject* sideWall7 = new GameObject(sideWallMesh.getMesh(), glm::vec3(-2375, wallHeight / 2 - 50, 525), 1.0f);
+	sideWall7->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(sideWall7);
+
+}

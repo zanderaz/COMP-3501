@@ -108,6 +108,7 @@ private:
 	void createWalls();
 	void createWallsSection1();
 	void createWallsSection2();
+	void createWallsSection3();
 
 	// ----------------- Constants -----------------
 	const string TITLE_TEXT = "Triple Sicks";
