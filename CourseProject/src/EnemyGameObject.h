@@ -13,6 +13,8 @@ public:
 	void update(float deltaTime) override;
 	void faceTowards(const glm::vec3& point_to_face);
 	void draw(ofShader* lightingShader) override;
+	void setVelocity(const glm::vec3& vel) { velocity = vel; }
+	glm::vec3 getVelocity() const { return velocity; }
 
 protected:
 
@@ -20,6 +22,7 @@ protected:
 	const float ENEMY_BASE_SPEED = 75.0f;
 	float enemy_speed;
 	float radius;
+	glm::vec3 velocity;
 
 };
 
