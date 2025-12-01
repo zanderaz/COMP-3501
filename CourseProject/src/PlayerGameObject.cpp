@@ -14,7 +14,7 @@ PlayerGameObject::PlayerGameObject(const ofMesh& mesh, const glm::vec3& position
     v_max_speed = 200.f;
     gravity = 250.f;
 
-    radius = 15; // only needed for collision purposes now
+    radius = 20; // only needed for collision purposes now
     health = 3;
 
     speed_boost_cd_timer.Start(0.5f); // initial CD, pretty irrelevant
@@ -106,6 +106,11 @@ void PlayerGameObject::update(float delta_time) {
     // apply velocity to position, ensure position does not go inside a wall/box
     position += velocity * delta_time;
     resolveCollisions();
+
+    // ensure you cannot fall out of the map (workaround for bug where you clip through the ground plane)
+    if (position.y < -35.0f) {
+        position.y = -25.0f;
+    }
 
     // keep the player upright (remove roll) every frame
     enforceUpright();

@@ -45,6 +45,13 @@ public:
 	void recenterCursorToWindowCenter(void);
 	void handleCheckpointCollision(CheckpointGameObject* checkpoint);
 
+	// collidable object creation
+	void createWalls();
+	void createWallsSection1();
+	void createWallsSection2();
+	void createWallsSection3();
+	void createVeins();
+
 private:
 
 	// game object collections
@@ -53,6 +60,7 @@ private:
 	vector<CheckpointGameObject*> checkpoint_vec;
 	vector<PowerUpObject*> power_up_vec;
 	vector<GameObject*> wall_objects_vec;
+	vector<GameObject*> interactable_objects_vec;
 
 	// mouse-look and camera related
 	MyCustomCamera cam;
@@ -68,10 +76,9 @@ private:
 	// sound
 	ofSoundPlayer background_music;
 
-	// meshes
+	// re-used meshes
 	ofSpherePrimitive power_up_mesh;
 	ofSpherePrimitive player_mesh;
-	ofPlanePrimitive alignment_check;
 
 	// shader
 	ofShader* lightingShader;
@@ -104,11 +111,6 @@ private:
 
 	TextBox textBox;
 	bool showTextBox;
-
-	void createWalls();
-	void createWallsSection1();
-	void createWallsSection2();
-	void createWallsSection3();
 
 	// ----------------- Constants -----------------
 	const string TITLE_TEXT = "Triple Sicks";
