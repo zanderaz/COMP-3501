@@ -3,7 +3,7 @@
 GameObject::GameObject(const ofMesh& mesh, const glm::vec3& position, float scale)
 	: mesh(mesh), position(position), scale(scale) {
 	orientation = glm::quat(1, 0, 0, 0);
-	colour = glm::vec3(100);
+	colour = glm::vec3(0.5f); // default grey color
 	visible = true;
 }
 
@@ -16,11 +16,8 @@ void GameObject::draw(ofShader* lightingShader) {
 	lightingShader->setUniform3f("objectColor", colour);
 	lightingShader->setUniform1i("isLight", false);
 	lightingShader->setUniform3f("emissionColor", glm::vec3(0.0));
-	// std::cout << "Setting objectColor: " << colour.r << ", " << colour.g << ", " << colour.b << std::endl;
 
 	ofPushMatrix();
-	//ofTranslate(position);
-	//ofSetColor(colour[0], colour[1], colour[2]);
 	mesh.draw();
 	ofPopMatrix();
 }

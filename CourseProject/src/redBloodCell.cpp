@@ -6,7 +6,7 @@ RedBloodCell::RedBloodCell(RedBloodCellParticleSystem* rbc, const ofMesh& mesh, 
 	//mesh = ofMesh::sphere(0.5, 100);
 	//mesh = ofMesh::cylinder(0.5, 0.25, 20, 20);
 	//position = glm::vec3(0, -1, 0);
-	colour = glm::vec3(255, 25, 50);
+	colour = glm::vec3(1.0f, 0.1f, 0.2f);
 	this->rbc = rbc;
 	//rbc->setPosition(position + glm::vec3(0, 0.1, 0));
 }

@@ -1,21 +1,57 @@
 #include "redBloodCellParticleSystem.h"
 
-void RedBloodCellParticleSystem::setup(int numParticles) {
-    particleCount = numParticles;
+// constructor
+RedBloodCellParticleSystem::RedBloodCellParticleSystem(MyCustomCamera& camera, int num_particles)
+    : cam(camera) {
+    particleCount = num_particles;
     particleSize = 10.0f;
     currentTime = 0.0f;
-        
+
     startTime = ofGetElapsedTimef();
 
     ofDisableArbTex(); // may not do anything, here for compatibility
-    redBloodCell.load("images/redbloodcell.jpg");
-
+    
     setupParticles(particleCount);
 
     particleNode.setPosition(glm::vec3(0, 0, 0));
-
-    shader.load("shader/rbcparticle.vert", "shader/rbcparticle.frag", "shader/rbcparticle.geom");
 }
+
+// load particle shader based on shader filepaths
+void RedBloodCellParticleSystem::loadShader(string vert, string frag, string geom) {
+    shader.load(vert, frag, geom);
+    if (!shader.isLoaded()) {
+        ofLogError() << "Particle Shader failed to load!";
+        ofExit();
+    }
+}
+
+// load the particle image based on filepath
+void RedBloodCellParticleSystem::loadImage(string filepath) {
+    try {
+        particle_image.load(filepath);
+    }
+    catch (...) {
+        ofLogError() << "Particle Image could not be loaded, ensure the image exists in bin/data/images.";
+        ofExit();
+    }
+}
+
+//void RedBloodCellParticleSystem::setup(int numParticles) {
+//    particleCount = numParticles;
+//    particleSize = 10.0f;
+//    currentTime = 0.0f;
+//        
+//    startTime = ofGetElapsedTimef();
+//
+//    ofDisableArbTex(); // may not do anything, here for compatibility
+//    particle_image.load("images/redbloodcell.jpg");
+//
+//    setupParticles(particleCount);
+//
+//    particleNode.setPosition(glm::vec3(0, 0, 0));
+//
+//    shader.load("shader/rbcparticle.vert", "shader/rbcparticle.frag", "shader/rbcparticle.geom");
+//}
 
 void RedBloodCellParticleSystem::setupParticles(int numParticles) {
     positions.resize(numParticles);
@@ -56,7 +92,7 @@ void RedBloodCellParticleSystem::draw() {
 
     shader.setUniform1f("pSize", particleSize); // particle point size
     shader.setUniform1f("t", currentTime); // time
-    shader.setUniformTexture("texture0", redBloodCell.getTexture(), 1);
+    shader.setUniformTexture("texture0", particle_image.getTexture(), 1);
 
     ofMatrix4x4 modelMatrix = particleNode.getGlobalTransformMatrix();
     ofMatrix4x4 viewProjMatrix = cam.getModelViewProjectionMatrix();
