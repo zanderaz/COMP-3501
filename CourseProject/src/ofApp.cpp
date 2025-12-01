@@ -120,29 +120,15 @@ void ofApp::setup() {
 	textBox.setBorderWidth(3.0f);
 	showTextBox = false;
 
-	// TESTING COLLISION FUNCTIONALITY
-
-	// a floor plane
-	/*
-	ofPlanePrimitive planeMesh;
-	planeMesh.set(1000, 1000); // Large floor
-	planeMesh.setResolution(2, 2);
-	// flat on the ground
-	GameObject* floor = new GameObject(planeMesh.getMesh(), glm::vec3(0, -50, 0), 1.0f);
-	floor->setOrientation(glm::angleAxis(glm::radians(-90.0f), glm::vec3(1, 0, 0)));
-	wall_objects_vec.push_back(floor);
-
-	// a generic box wall
-	ofBoxPrimitive boxMesh;
-	boxMesh.set(100); // 100x100x100 box
-	GameObject* box = new GameObject(boxMesh.getMesh(), glm::vec3(200, 0, 200), 1.0f);
-	wall_objects_vec.push_back(box);
-	*/
-
-	// setup with player
-	//player->setWalls(&wall_objects_vec);
+	// create collidable geometry, store in player so collision resolving works properly
 	createWalls();
 	player->setWalls(&wall_objects_vec);
+
+	// create interactible object, a vein that can be infected
+
+	// create cylinder to be the vein
+	// ONE END -> X 800, Y 100, Z 200
+	// OTHER END -> x 400, Y 100, Z 200
 }
 
 
@@ -159,6 +145,9 @@ void ofApp::setupGameplayGameState(void) {
 		glfwGetCursorPos(w, &last_x, &last_y);
 		is_first_mouse = false;
 	}
+
+	// player should start looking at the path out of the first room
+	player->yaw(PI);
 
 }
 
@@ -364,8 +353,8 @@ void ofApp::draw() {
 		// everything below (until fbo is ended) will get put in the frame buffer for screen-space effects
 		screenSpaceEffect.setInBloodstream(bloodstream);
 		screenSpaceEffect.setSpeedBoostActive(player->isSpeedBoostOn());
-		screenSpaceEffect.begin();
 
+		screenSpaceEffect.begin();
 		ofEnableDepthTest();
 		player->getCamera().begin();
 
@@ -432,10 +421,6 @@ void ofApp::draw() {
 		lightingShader->setUniform3f("lightPos", viewLight);
 		lightingShader->setUniform3f("viewPos", viewCam);
 
-
-		//lightingShader->setUniform3f("lightPos", lightPos);
-		//lightingShader->setUniform3f("viewPos", camPos);
-
 		// test objects
 
 		lightingShader->setUniform3f("lightColor", glm::vec3(1, 1, 1));
@@ -475,20 +460,22 @@ void ofApp::draw() {
 		// rbc
 		redBloodCell->draw(lightingShader);
 
-		// plane for testing
-		//ofSetColor(100, 60, 250)
-		//lightingShader->setUniformMatrix4f("worldMatrix", alignment_check.getGlobalTransformMatrix());
-		//lightingShader->setUniform3f("objectColor", glm::vec3(0.6, 0.6, 0.9));
-		//alignment_check.getMesh().draw();
-
 		lightingShader->end();
+
 		player->getCamera().end();
 		ofDisableDepthTest();
-
 		screenSpaceEffect.end();
+
 		screenSpaceEffect.draw();
 
+		// HUD elements
 		textBox.draw();
+
+		// DEBUG: minecraft f3 menu with developer info
+		ofDrawBitmapString("FPS: " + to_string(ofGetFrameRate()), glm::vec2(30, 30));
+		ofDrawBitmapString("X-pos: " + to_string(player->getPosition().x), glm::vec2(30, 50));
+		ofDrawBitmapString("Y-pos: " + to_string(player->getPosition().y), glm::vec2(30, 60));
+		ofDrawBitmapString("Z-pos: " + to_string(player->getPosition().z), glm::vec2(30, 70));
 
 	}
 

@@ -14,7 +14,7 @@ PlayerGameObject::PlayerGameObject(const ofMesh& mesh, const glm::vec3& position
     v_max_speed = 200.f;
     gravity = 250.f;
 
-    radius = 15; // only needed for collision purposes now
+    radius = 20; // only needed for collision purposes now
     health = 3;
 
     speed_boost_cd_timer.Start(0.5f); // initial CD, pretty irrelevant
