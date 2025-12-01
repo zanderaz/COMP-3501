@@ -5,7 +5,7 @@ void ofApp::setup() {
 
 	// openframework project specific
 	ofSetWindowTitle("Course Project - Triple Sicks");
-	ofSetFrameRate(120); // gets overriden with vsync for whatever reason
+	ofSetFrameRate(GAME_FPS); // gets overriden with vsync for whatever reason
 	ofBackground(40);
 
 	// initalize member vars
@@ -17,6 +17,8 @@ void ofApp::setup() {
 	is_muted = false;
 	bloodstream = true; // start in bloodstream
 	boneMarrow = false;
+	show_interact_tip = false;
+	veins_infected_count = 0;
 	game_state = 0; // start on main menu
 	
 	// init shaders
@@ -42,12 +44,24 @@ void ofApp::setup() {
 
 	// init sounds
 	try {
-		background_music.load("sfx/bg_music.mp3");
-		background_music.setLoop(true);
-		background_music.setVolume(BG_MUSIC_VOL);
+		menu_music.load("sfx/menu_music.mp3");
+		menu_music.setLoop(true);
+		menu_music.setVolume(MUSIC_VOL);
+
+		gameplay_music.load("sfx/bg_music.mp3");
+		gameplay_music.setLoop(true);
+		gameplay_music.setVolume(MUSIC_VOL);
+
+		infect_sound.load("sfx/vein_infect.wav");
+		infect_sound.setLoop(false);
+		infect_sound.setVolume(SFX_VOL);
+
+		speed_boost_sound.load("sfx/speed_boost.wav");
+		infect_sound.setLoop(false);
+		infect_sound.setVolume(SFX_VOL);
 	}
 	catch (...) {
-		ofLogError() << "Music file could not be loaded. Ensure bin/data/bg_music.mp3 exists.";
+		ofLogError() << "Sound files could not be loaded. Ensure bin/data/sfx exists and is populated.";
 	}
 
 	// camera settings
@@ -84,9 +98,10 @@ void ofApp::setup() {
 	// checkpoint to tp to bonemarrow
 	checkpoint_vec.push_back(new CheckpointGameObject(power_up_mesh.getMesh(), glm::vec3(-300, 100, 200), 1.f));
 
-	// test for red blood cells
-	rbc = new RedBloodCellParticleSystem(player->getCamera());
-	rbc->setup(25);
+	// setup red blood cell particle system
+	rbc = new RedBloodCellParticleSystem(player->getCamera(), 25);
+	rbc->loadShader("shader/rbcparticle.vert", "shader/rbcparticle.frag", "shader/rbcparticle.geom");
+	rbc->loadImage("images/redbloodcell.jpg");
 	ofMesh mesh = ofMesh::sphere(25, 100);
 	redBloodCell = new RedBloodCell(rbc, mesh, glm::vec3(20, 200, -20), 1.0f);
 	screenSpaceEffect.setup(ofGetWidth(), ofGetHeight());
@@ -112,7 +127,7 @@ void ofApp::setup() {
 	textBox.setBackgroundColor(ofColor(0, 0, 0, 220));
 	textBox.setTextColor(ofColor(255, 255, 0));
 	textBox.setBorderColor(ofColor(255, 255, 255));
-	textBox.setPosition(ofGetWidth() / 2 - 250, ofGetHeight() - 200);
+	textBox.setPosition((ofGetWidth() / 2.0f) - 250, ofGetHeight() - 200);
 	textBox.setBorderWidth(3.0f);
 	showTextBox = false;
 
@@ -121,6 +136,24 @@ void ofApp::setup() {
 	player->setWalls(&wall_objects_vec);
 
 	// setup the interactable objects
+	glm::vec3 vein1_pos(600, 50, 130);
+	glm::vec3 vein2_pos(-830, 70, 1350);
+	glm::vec3 vein3_pos(-2250, 45, 425);
+
+	GameObject* interact_obj1 = new GameObject(power_up_mesh.getMesh(), vein1_pos, 1.f);
+	interact_obj1->setColour(glm::vec3(1.0f, 0.9f, 0.4f));
+	interactables_vec.push_back(interact_obj1);
+
+	GameObject* interact_obj2 = new GameObject(power_up_mesh.getMesh(), vein2_pos, 1.f);
+	interact_obj2->setColour(glm::vec3(1.0f, 0.9f, 0.4f));
+	interactables_vec.push_back(interact_obj2);
+
+	GameObject* interact_obj3 = new GameObject(power_up_mesh.getMesh(), vein3_pos, 1.f);
+	interact_obj3->setColour(glm::vec3(1.0f, 0.9f, 0.4f));
+	interactables_vec.push_back(interact_obj3);
+
+	// play main menu music
+	menu_music.play();
 
 }
 
@@ -129,7 +162,8 @@ void ofApp::setup() {
 void ofApp::setupGameplayGameState(void) {
 
 	ofBackground(80);
-	background_music.play();
+	menu_music.stop();
+	gameplay_music.play();
 
 	// mouse related
 	mouse_capture_flag = true;
@@ -174,10 +208,10 @@ void ofApp::exit(void) {
 	}
 	wall_objects_vec.clear();
 
-	for (GameObject* obj : interactable_objects_vec) {
+	for (GameObject* obj : interactables_vec) {
 		delete obj;
 	}
-	interactable_objects_vec.clear();
+	interactables_vec.clear();
 
 }
 
@@ -230,7 +264,7 @@ void ofApp::update() {
 
 				// handle damage
 				player->getInvincibilityTimer().Start(2.0f);
-				player->setColour(glm::vec3(255.0f, 0.0f, 50.0f));
+				// add SSE or other indicator that damage occurred
 
 				// clean up enemy
 				delete enemy;
@@ -239,6 +273,7 @@ void ofApp::update() {
 		}
 
 		/*** CHECKPOINT HANDLING ***/
+
 		for (int i = 0; i < checkpoint_vec.size(); ++i) {
 			CheckpointGameObject* checkpoint = checkpoint_vec[i];
 
@@ -256,7 +291,21 @@ void ofApp::update() {
 			}
 		}
 
-		// rbc movement test
+		/*** INTERACTABLE HANDLING ***/
+
+		// check if player is in interact range
+		bool player_in_range = false;
+		for (GameObject* interact_obj : interactables_vec) {
+			if (glm::distance(interact_obj->getPosition(), player->getPosition()) < INTERACT_RANGE) {
+				player_in_range = true;
+			}
+		}
+		if (player_in_range) show_interact_tip = true;
+		else show_interact_tip = false;
+
+		/*** OTHER (testing most likely) ***/
+
+		// rbc movement testing
 		/*
 		glm::vec3 dir(1, 0, 0);
 		dir += 10 * delta_time;
@@ -267,22 +316,14 @@ void ofApp::update() {
 
 	// -------------------- GAME OVER GAME STATE ---------------------------
 	else if (game_state == 2) {
-		// idk if this will be necessary
+		
 	}
 
 	// -------------------- GAME WON GAME STATE ---------------------------
 	else if (game_state == 3) {
-		// idk if this will be necessary
+		
 	}
 
-	//test (make objects move for visualization and testing model/world matrix)
-	/*
-	for (int i = 0; i < power_up_vec.size(); i++) {
-		glm::vec3 dir (1, 0, 0);
-		dir += 10*delta_time;
-		power_up_vec[i]->setPosition(power_up_vec[i]->getPosition() + dir);
-	}
-	*/
 }
 
 
@@ -453,6 +494,13 @@ void ofApp::draw() {
 			checkpoint_vec[i]->draw(lightingShader);
 		}
 
+		// interactable drawing, no texture right now
+		lightingShader->setUniform1i("useTexture", 0);
+		for (GameObject* interact_obj : interactables_vec) {
+			interact_obj->draw(lightingShader);
+		}
+		if (bUseTexture) lightingShader->setUniform1i("useTexture", 1);
+
 		// different texture for walls
 		if (bUseTexture) {
 			lightingShader->setUniformTexture("tex0", wallTexture, 0);
@@ -474,13 +522,22 @@ void ofApp::draw() {
 
 		// HUD elements
 		textBox.draw();
-
+		if (show_interact_tip) {
+			float center_x = ofGetWidth() / 2.0f;
+			float center_y = ofGetHeight() / 2.0f;
+			ofRectangle interact_bounds = dialog_font.getStringBoundingBox(INTERACT_TEXT, 0, 0);
+			float caption_x = center_x - (interact_bounds.width / 2.0f);
+			float caption_y = center_y + 200;
+			dialog_font.drawString(INTERACT_TEXT, caption_x, caption_y);
+		}
+		
 		// DEBUG: minecraft f3 menu with developer info
 		ofSetColor(255);
 		ofDrawBitmapString("FPS: " + to_string(ofGetFrameRate()), glm::vec2(30, 30));
 		ofDrawBitmapString("X-pos: " + to_string(player->getPosition().x), glm::vec2(30, 50));
 		ofDrawBitmapString("Y-pos: " + to_string(player->getPosition().y), glm::vec2(30, 60));
 		ofDrawBitmapString("Z-pos: " + to_string(player->getPosition().z), glm::vec2(30, 70));
+		ofDrawBitmapString("Veins Infected: " + to_string(veins_infected_count) + " / 3", glm::vec2(30, 90));
 
 	}
 
@@ -503,17 +560,38 @@ void ofApp::keyPressed(int key) {
 	if (key == 'e' || key == 'E') {
 		if (player->isSpeedBoostReady()) {
 			player->activateSpeedBoost();
+			speed_boost_sound.play();
 		}
 	}
 
-	// mute game audio
+	// interact key
+	if (key == 'f' || key == 'F') {
+		if (show_interact_tip) {
+
+			// check which interactable needs to get infected and removed
+			for (int i = 0; i < interactables_vec.size(); ++i) {
+				if (glm::distance(interactables_vec[i]->getPosition(), player->getPosition()) < INTERACT_RANGE) {
+					GameObject* interactable = interactables_vec[i];
+					interactables_vec.erase(interactables_vec.begin() + i);
+					delete interactable;
+
+					veins_infected_count++;
+					infect_sound.play();
+				}
+			}
+		}
+	}
+
+	// mute the music (maybe do sfx too but at that point just set vol mixer to 0)
 	if (key == 'm' || key == 'M') {
 		is_muted = !is_muted;
 		if (is_muted) {
-			background_music.setVolume(0.0);
+			menu_music.setVolume(0.0f);
+			gameplay_music.setVolume(0.0f);
 		}
 		else {
-			background_music.setVolume(BG_MUSIC_VOL);
+			menu_music.setVolume(MUSIC_VOL);
+			gameplay_music.setVolume(MUSIC_VOL);
 		}
 	}
 

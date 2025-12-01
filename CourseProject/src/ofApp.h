@@ -60,7 +60,7 @@ private:
 	vector<CheckpointGameObject*> checkpoint_vec;
 	vector<PowerUpObject*> power_up_vec;
 	vector<GameObject*> wall_objects_vec;
-	vector<GameObject*> interactable_objects_vec;
+	vector<GameObject*> interactables_vec;
 
 	// mouse-look and camera related
 	MyCustomCamera cam;
@@ -74,7 +74,10 @@ private:
 	float time_elapsed;
 
 	// sound
-	ofSoundPlayer background_music;
+	ofSoundPlayer menu_music;
+	ofSoundPlayer gameplay_music;
+	ofSoundPlayer infect_sound;
+	ofSoundPlayer speed_boost_sound;
 
 	// re-used meshes
 	ofSpherePrimitive power_up_mesh;
@@ -84,11 +87,10 @@ private:
 	ofShader* lightingShader;
 	ofShader* skyBoxShader;
 
-	// main-menu fonts and geometry
+	// main-menu fonts, geometry, texture
 	ofTrueTypeFont menu_button_font;
 	ofTrueTypeFont menu_title_font;
 	ofTrueTypeFont menu_caption_font;
-	ofTrueTypeFont dialog_font;
 	ofImage menu_background;
 	ofRectangle start_button_rect;
 	ofRectangle quit_button_rect;
@@ -97,6 +99,7 @@ private:
 	unsigned short int game_state; // 0 = main menu, 1 = gameplay, 2 = game over, 3 = game won 
 	bool bloodstream, boneMarrow;
 	bool is_muted;
+	unsigned short int veins_infected_count;
 
 	// textures
 	ofImage texture, skyTexture, wallTexture;
@@ -109,15 +112,24 @@ private:
 	RedBloodCell* redBloodCell;
 	ScreenSpaceEffect screenSpaceEffect;
 
+	// in game text
+	ofTrueTypeFont dialog_font;
 	TextBox textBox;
 	bool showTextBox;
+	bool show_interact_tip;
 
 	// ----------------- Constants -----------------
+	const unsigned short int GAME_FPS = 144;
+
 	const string TITLE_TEXT = "Triple Sicks";
 	const string CAPTION_TEXT = "COMP3501 Course Project by Aidan, Evan, Zander";
 	const string START_TEXT = "Start Game";
 	const string QUIT_TEXT = "Quit Game";
+	const string INTERACT_TEXT = "Press ' f ' to Infect.";
 
-	const float BG_MUSIC_VOL = 0.2f;
+	const float INTERACT_RANGE = 200.0f;
+
+	const float MUSIC_VOL = 0.2f;
+	const float SFX_VOL = 0.4f;
 
 };

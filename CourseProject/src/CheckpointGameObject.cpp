@@ -5,7 +5,7 @@ CheckpointGameObject::CheckpointGameObject(const ofMesh& mesh, const glm::vec3& 
 	: GameObject(mesh, position, scale) {
 	// creating a base checkpoint as a sphere
 	radius = 15;
-	colour = glm::vec3(20.f, 255.f, 20.f);
+	colour = glm::vec3(0.1f, 1.0f, 0.1f);
 }
 
 

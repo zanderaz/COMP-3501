@@ -3,7 +3,7 @@ By Aidan Lalonde-Novales, Evan Letto, Zander Azevedo
 
 --> Design <--
 
-Gonna have to write a bunch of shit here later so I'm just copying one of my assignment readme files so we can fill this out later (once we're done).
+Reference the final project report for information on design decisions.
 
 
 --> Build Instructions <--
@@ -26,4 +26,4 @@ Tested in Windows 11 x64 (AMD) on discrete graphics and Windows 10 x64 (AMD) on 
 
 - holding shift while using WASD causes keys to become stuck, e.g. 'w' will stay held when released, which constantly applies unwanted forward movement
 - if an Nvidia banner pop-up appears (from Nvidia app), mouse tracking will desync/jump somewhere else on the screen
-- looking straight up or down causes yaw to rapidly change
+- looking straight up or down causes changes to yaw to increase dramatically
