@@ -3,7 +3,7 @@
 GameObject::GameObject(const ofMesh& mesh, const glm::vec3& position, float scale)
 	: mesh(mesh), position(position), scale(scale) {
 	orientation = glm::quat(1, 0, 0, 0);
-	colour = glm::vec3(255, 255, 255);
+	colour = glm::vec3(100);
 	visible = true;
 }
 

@@ -63,10 +63,6 @@ void ofApp::setup() {
 	orbitSpeed = 0.3;
 	orbitAngle = 0;
 
-	alignment_check.set(640, 480);
-	alignment_check.setPosition(320, 240, 0);
-	alignment_check.setResolution(2, 2);
-
 	// setup meshes
 	power_up_mesh.setRadius(20);
 	power_up_mesh.setResolution(10);
@@ -124,11 +120,8 @@ void ofApp::setup() {
 	createWalls();
 	player->setWalls(&wall_objects_vec);
 
-	// create interactible object, a vein that can be infected
+	// setup the interactable objects
 
-	// create cylinder to be the vein
-	// ONE END -> X 800, Y 100, Z 200
-	// OTHER END -> x 400, Y 100, Z 200
 }
 
 
@@ -181,6 +174,11 @@ void ofApp::exit(void) {
 	}
 	wall_objects_vec.clear();
 
+	for (GameObject* obj : interactable_objects_vec) {
+		delete obj;
+	}
+	interactable_objects_vec.clear();
+
 }
 
 
@@ -191,6 +189,11 @@ void ofApp::update() {
 
 	// increment time
 	float delta_time = ofGetLastFrameTime();
+
+	// prevents massive jumps if the window is dragged or the game freezes
+	if (delta_time > 0.1f) {
+		delta_time = 0.1f;
+	}
 	time_elapsed += delta_time;
 
 	// -------------------- MAIN MENU GAME STATE ---------------------------
@@ -358,14 +361,14 @@ void ofApp::draw() {
 		ofEnableDepthTest();
 		player->getCamera().begin();
 
-		// test (skybox)
+		// Draw skybox first
 		skyBoxShader->begin();
+
 		skyBoxShader->setUniformTexture("skyTexture", skyTexture, 0);
 		skyBoxShader->setUniformMatrix4f("viewMatrix", player->getCamera().getModelViewMatrix());
 		skyBoxShader->setUniformMatrix4f("projectionMatrix", player->getCamera().getProjectionMatrix());
 		skyBoxShader->setUniformMatrix4f("modelViewProjectionMatrix", player->getCamera().getModelViewProjectionMatrix());
-	
-		// draw skybox
+
 		ofPushMatrix();
 		ofScale(1, 1, 1);
 		skySphere.draw();
@@ -450,6 +453,7 @@ void ofApp::draw() {
 			checkpoint_vec[i]->draw(lightingShader);
 		}
 
+		// different texture for walls
 		if (bUseTexture) {
 			lightingShader->setUniformTexture("tex0", wallTexture, 0);
 		}
@@ -472,6 +476,7 @@ void ofApp::draw() {
 		textBox.draw();
 
 		// DEBUG: minecraft f3 menu with developer info
+		ofSetColor(255);
 		ofDrawBitmapString("FPS: " + to_string(ofGetFrameRate()), glm::vec2(30, 30));
 		ofDrawBitmapString("X-pos: " + to_string(player->getPosition().x), glm::vec2(30, 50));
 		ofDrawBitmapString("Y-pos: " + to_string(player->getPosition().y), glm::vec2(30, 60));
@@ -516,11 +521,11 @@ void ofApp::keyPressed(int key) {
 	if (key == 't' || key == 'T') {
 		bUseTexture = !bUseTexture;
 	}
-	if (key == 'f' || key == 'F') {
+	if (key == 'b' || key == 'B') {
 		bloodstream = !bloodstream;
 	}
 	if (key == 'h' || key == 'H') {
-		textBox.showTemporarily(3.0f);
+		textBox.showTemporarily(4.0f);
 	}
 }
 
@@ -630,7 +635,7 @@ void ofApp::mouseExited(int x, int y) {
 //--------------------------------------------------------------
 void ofApp::windowResized(int w, int h) {
 	screenSpaceEffect.setResolution(w, h);
-	textBox.setPosition(ofGetWidth() / 2 - 250, ofGetHeight() - 200);
+	textBox.setPosition((ofGetWidth() / 2.0f) - 250, ofGetHeight() - 200);
 }
 
 
@@ -709,18 +714,19 @@ void ofApp::handleCheckpointCollision(CheckpointGameObject* checkpoint) {
 	}
 }
 
-// create walls for the play area
+// create walls for the play area, as well as any other collidable objects 
 void ofApp::createWalls() {
 	createWallsSection1();
 	createWallsSection2();
 	createWallsSection3();
+	createVeins();
 
 	ofLog() << "Created walls: " << wall_objects_vec.size() << " objects";
 	ofLog() << "Player starts at position: " << player->getPosition();
 }
 
+// first room and exit
 void ofApp::createWallsSection1() {
-	// first room and exit
 
 	// wall dimensions
 	float wallThickness = 20.0f;
@@ -792,11 +798,12 @@ void ofApp::createWallsSection1() {
 	GameObject* ceiling = new GameObject(ceilingMesh.getMesh(), glm::vec3(0, wallHeight - 50, 0), 1.0f);
 	ceiling->setVisible(false);
 	wall_objects_vec.push_back(ceiling);
+
 }
 
+// starts at hallways out of first room
 void ofApp::createWallsSection2() {
-	// starts at hallways out of first room
-
+	
 	// wall dimensions
 	float wallThickness = 20.0f;
 	float wallHeight = 300.0f;
@@ -830,10 +837,12 @@ void ofApp::createWallsSection2() {
 	GameObject* rightSideWall = new GameObject(sideWallMesh.getMesh(), glm::vec3(-600, wallHeight / 2 - 50, 400), 1.0f);
 	//rightSideWall->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
 	wall_objects_vec.push_back(rightSideWall);
+
 }
 
+// starts at diagonal hallway to the right of start
 void ofApp::createWallsSection3() {
-	// starts at diagonal hallway to the right of start
+	
 	float wallThickness = 20.0f;
 	float wallHeight = 300.0f;
 
@@ -922,5 +931,39 @@ void ofApp::createWallsSection3() {
 	GameObject* sideWall7 = new GameObject(sideWallMesh.getMesh(), glm::vec3(-2375, wallHeight / 2 - 50, 525), 1.0f);
 	sideWall7->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
 	wall_objects_vec.push_back(sideWall7);
+
+}
+
+// create veins that can be infected
+void ofApp::createVeins(void) {
+
+	float radius = 40.0f;
+
+	// first vein, to the left of the starting room
+	ofCylinderPrimitive vein_mesh1;
+	vein_mesh1.set(radius, 400.0f);
+	vein_mesh1.setResolution(18, 2);
+	glm::vec3 vein1_pos(600, 30, 100);
+	GameObject* vein1 = new GameObject(vein_mesh1.getMesh(), vein1_pos, 1.0f);
+	vein1->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 0, 1)));
+	wall_objects_vec.push_back(vein1);
+
+	// second vein, midway through bloodstream
+	ofCylinderPrimitive vein_mesh2;
+	vein_mesh2.set(radius, 350.0f);
+	vein_mesh2.setResolution(18, 2);
+	glm::vec3 vein2_pos(-800, 75, 1350);
+	GameObject* vein2 = new GameObject(vein_mesh2.getMesh(), vein2_pos, 1.0f);
+	vein2->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(1, 0, 0)));
+	wall_objects_vec.push_back(vein2);
+
+	// third vein, next to final door
+	ofCylinderPrimitive vein_mesh3;
+	vein_mesh3.set(radius, 300.0f);
+	vein_mesh3.setResolution(18, 2);
+	glm::vec3 vein3_pos(-2250, 25, 400);
+	GameObject* vein3 = new GameObject(vein_mesh3.getMesh(), vein3_pos, 1.0f);
+	vein3->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 0, 1)));
+	wall_objects_vec.push_back(vein3);
 
 }
