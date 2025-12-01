@@ -5,6 +5,7 @@ GameObject::GameObject(const ofMesh& mesh, const glm::vec3& position, float scal
 	orientation = glm::quat(1, 0, 0, 0);
 	colour = glm::vec3(0.5f); // default grey color
 	visible = true;
+	computeLocalBounds();
 }
 
 // universal draw function
@@ -35,4 +36,21 @@ glm::mat4 GameObject::getWorldMatrix() {
 	mat = glm::scale(mat, glm::vec3(scale));
 
 	return mat;
+}
+
+void GameObject::computeLocalBounds() {
+	const std::vector<glm::vec3>& verts = mesh.getVertices();
+	if (verts.empty()) {
+		localMinBound = glm::vec3(0.0f);
+		localMaxBound = glm::vec3(0.0f);
+		return;
+	}
+
+	localMinBound = verts[0];
+	localMaxBound = verts[0];
+
+	for (const auto& v : verts) {
+		localMinBound = glm::min(localMinBound, v);
+		localMaxBound = glm::max(localMaxBound, v);
+	}
 }
