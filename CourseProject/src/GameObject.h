@@ -19,12 +19,14 @@ public:
 	inline const ofMesh& getMesh() const { return mesh; }
 	inline const glm::vec3& getColour() const { return colour; }
 	inline const bool isVisible() const { return visible; }
+	inline const glm::vec3& getLocalMinBound() const { return localMinBound; }
+	inline const glm::vec3& getLocalMaxBound() const { return localMaxBound; }
 
 	// setters
 	inline void setPosition(const glm::vec3& pos) { position = pos; }
 	inline void setScale(float s) { scale = s; }
 	inline void setOrientation(const glm::quat& q) { orientation = q; }
-	inline void setMesh(const ofMesh& m) { mesh = m; }
+	inline void setMesh(const ofMesh& m) { mesh = m; computeLocalBounds(); }
 	inline void setColour(const glm::vec3& c) { colour = c; }
 	inline void setVisible(bool v) { visible = v; }
 	
@@ -35,6 +37,7 @@ public:
 	glm::vec3 getqSide() { return orientation * BASE_SIDE; }
 	glm::vec3 getqUp() { return orientation * BASE_UP; }
 	glm::mat4 getWorldMatrix();
+	void computeLocalBounds();
 
 protected:
 
@@ -48,6 +51,8 @@ protected:
 	glm::vec3 BASE_FORWARD = glm::vec3(0, 0, 1);
 	ofImage texture;
 	bool visible;
+	glm::vec3 localMinBound;
+	glm::vec3 localMaxBound;
 
 };
 

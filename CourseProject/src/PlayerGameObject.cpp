@@ -136,16 +136,9 @@ void PlayerGameObject::resolveCollisions(void) {
 
         // find the closest point on the wall's bounding box in Local Space
         // iterate vertices to find min/max bounds (AABB) of the mesh
-        const std::vector<glm::vec3>& verts = wall->getMesh().getVertices();
-        if (verts.empty()) continue;
-
-        glm::vec3 minBound = verts[0];
-        glm::vec3 maxBound = verts[0];
-
-        for (const auto& v : verts) {
-            minBound = glm::min(minBound, v);
-            maxBound = glm::max(maxBound, v);
-        }
+        if (wall->getMesh().getNumVertices() == 0) continue;
+        const glm::vec3& minBound = wall->getLocalMinBound(); // now computing min/max bounds on setup
+        const glm::vec3& maxBound = wall->getLocalMaxBound();
 
         // clamp local player position to the box bounds to find the closest point on the surface/inside
         glm::vec3 localClosestPoint = glm::clamp(localPos, minBound, maxBound);

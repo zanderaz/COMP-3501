@@ -170,15 +170,20 @@ void EnemySpawner::update(float deltaTime, PlayerGameObject* player) {
         spawnEnemy();
     }
 
+    const glm::vec3 playerPos = player->getPosition();
+    const float collisionRadius = player->getRadius();
+    const float collisionRadiusSq = collisionRadius * collisionRadius;
+
     for (int i = enemies.size() - 1; i >= 0; i--) {
         EnemyGameObject* enemy = enemies[i];
         enemy->update(deltaTime);
 
         // collision with player
-        float dist = glm::distance(player->getPosition(), enemy->getPosition());
-        if (dist <= player->getRadius() + enemy->getRadius() && !player->getInvincibilityTimer().IsRunning()) {
+        const glm::vec3 toPlayer = playerPos - enemy->getPosition();
+        const float combinedRadius = collisionRadius + enemy->getRadius();
+        const float combinedRadiusSq = combinedRadius * combinedRadius;
+        if (glm::length2(toPlayer) <= combinedRadiusSq && !player->getInvincibilityTimer().IsRunning()) {
             player->getInvincibilityTimer().Start(1.0f);
-            player->setColour(glm::vec3(255.0f, 0.0f, 50.0f));
             player->setHealth(player->getHealth() - 1);
 
             delete enemy;
