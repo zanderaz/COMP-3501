@@ -8,13 +8,14 @@
 #include "MyCustomCamera.h"
 
 
-class RedBloodCellParticleSystem {
+class ParticleSystem {
 
 public:
 
-    RedBloodCellParticleSystem(MyCustomCamera& camera, int num_particles);
+    ParticleSystem(MyCustomCamera& camera, int num_particles);
     void loadShader(string vert, string frag, string geom);
     void loadImage(string filepath);
+    void setupRbcParticles();
     void update();
     void draw();
     void setPosition(const glm::vec3& position);
@@ -25,8 +26,6 @@ private:
 
     glm::vec3 sphere_sample();
     glm::vec3 ring_sample();
-
-    void setupParticles(int numParticles);
 
     ofVbo vbo; // vertex buffer object to store all the particle data
     ofNode particleNode; // ofNode for using oF transform functions; will apply the node's transform to the particle system

@@ -102,7 +102,6 @@ private:
 
 	// game state indicators
 	unsigned short int game_state; // 0 = main menu, 1 = gameplay, 2 = game over, 3 = game won 
-	bool bloodstream, boneMarrow;
 	bool is_muted;
 	unsigned short int veins_infected_count;
 
@@ -113,9 +112,15 @@ private:
 	ofIcoSpherePrimitive sphere, lightSphere, skySphere;
 	float orbitSpeed, orbitRadius, orbitAngle;
 	bool bUseTexture = true;
-	RedBloodCellParticleSystem* rbc;
-	RedBloodCell* redBloodCell;
+
+	// particle systems
+	ParticleSystem* rbc;
+	ParticleSystem* infected_ps;
+	ParticleSystemHolder* redBloodCell;
+
+	// SSE related
 	ScreenSpaceEffect screenSpaceEffect;
+	bool bloodstream, boneMarrow;
 
 	// in game text
 	ofTrueTypeFont dialog_font;
