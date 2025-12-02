@@ -99,11 +99,23 @@ void ofApp::setup() {
 	checkpoint_vec.push_back(new CheckpointGameObject(power_up_mesh.getMesh(), glm::vec3(-300, 100, 200), 1.f));
 
 	// setup red blood cell particle system
-	rbc = new RedBloodCellParticleSystem(player->getCamera(), 25);
+	rbc = new ParticleSystem(player->getCamera(), 25);
 	rbc->loadShader("shader/rbcparticle.vert", "shader/rbcparticle.frag", "shader/rbcparticle.geom");
 	rbc->loadImage("images/redbloodcell.jpg");
+	rbc->setupRbcParticles();
+
+	infected_ps = new ParticleSystem(player->getCamera(), 25);
+	infected_ps->loadShader("shader/biohazardparticle.vert", "shader/biohazardparticle.frag", "shader/biohazardparticle.geom");
+	infected_ps->loadImage("images/biohazard.png");
+	infected_ps->setupRbcParticles();
+
 	ofMesh mesh = ofMesh::sphere(25, 100);
-	redBloodCell = new RedBloodCell(rbc, mesh, glm::vec3(20, 200, -20), 1.0f);
+	redBloodCell = new ParticleSystemHolder(rbc, mesh, glm::vec3(20, 200, -20), 1.0f);
+
+	// setup infected particle system
+
+
+	// setup SSE handler
 	screenSpaceEffect.setup(ofGetWidth(), ofGetHeight());
 
 	// test
@@ -192,6 +204,7 @@ void ofApp::exit(void) {
 	delete skyBoxShader;
 	delete rbc;
 	delete redBloodCell;
+	delete infected_ps;
 
 	for (int i = 0; i < opposition_vec.size(); ++i) {
 		delete opposition_vec[i];
@@ -583,31 +596,37 @@ void ofApp::draw() {
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key) {
 
-	// player speed boost
-	if (key == 'e' || key == 'E') {
-		if (player->isSpeedBoostReady()) {
-			player->activateSpeedBoost();
-			speed_boost_sound.play();
+	// --------------------- gameplay related keybinds --------------------------
+	if (game_state == 1) {
+
+		// player speed boost
+		if (key == 'e' || key == 'E') {
+			if (player->isSpeedBoostReady()) {
+				player->activateSpeedBoost();
+				speed_boost_sound.play();
+			}
 		}
-	}
 
-	// interact key
-	if (key == 'f' || key == 'F') {
-		if (show_interact_tip) {
+		// interact key
+		if (key == 'f' || key == 'F') {
+			if (show_interact_tip) {
 
-			// check which interactable needs to get infected and removed
-			for (int i = 0; i < interactables_vec.size(); ++i) {
-				if (glm::distance(interactables_vec[i]->getPosition(), player->getPosition()) < INTERACT_RANGE) {
-					GameObject* interactable = interactables_vec[i];
-					interactables_vec.erase(interactables_vec.begin() + i);
-					delete interactable;
+				// check which interactable needs to get infected and removed
+				for (int i = 0; i < interactables_vec.size(); ++i) {
+					if (glm::distance(interactables_vec[i]->getPosition(), player->getPosition()) < INTERACT_RANGE) {
+						GameObject* interactable = interactables_vec[i];
+						interactables_vec.erase(interactables_vec.begin() + i);
+						delete interactable;
 
-					veins_infected_count++;
-					infect_sound.play();
+						veins_infected_count++;
+						infect_sound.play();
+					}
 				}
 			}
 		}
 	}
+
+	// --------------------- universal keybinds --------------------------
 
 	// mute the music (maybe do sfx too but at that point just set vol mixer to 0)
 	if (key == 'm' || key == 'M') {

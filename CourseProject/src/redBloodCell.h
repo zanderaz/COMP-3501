@@ -8,13 +8,13 @@
 #include "GameObject.h"
 
 
-class RedBloodCell : public GameObject {
+class ParticleSystemHolder : public GameObject {
 public:
-	RedBloodCell(RedBloodCellParticleSystem* rbc, const ofMesh& mesh, const glm::vec3& position, float scale);
+	ParticleSystemHolder(ParticleSystem* rbc, const ofMesh& mesh, const glm::vec3& position, float scale);
 	void update(float deltaTime) override;
 	void draw(ofShader* lightingShader) override;
 private:
-	RedBloodCellParticleSystem* rbc;
+	ParticleSystem* ps;
 };
 
 
