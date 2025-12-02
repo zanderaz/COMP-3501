@@ -128,6 +128,10 @@ void PlayerGameObject::resolveCollisions(void) {
     if (!walls) return;
 
     for (GameObject* wall : *walls) {
+        // skip non-collidable walls
+        if (!wall->isCollidable()) {
+            continue;
+        }
 
         // transform player position to Wall's Local Space
         // we use the inverse of the wall's world matrix to go from World -> Local

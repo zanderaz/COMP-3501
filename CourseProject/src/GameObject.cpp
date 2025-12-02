@@ -5,6 +5,7 @@ GameObject::GameObject(const ofMesh& mesh, const glm::vec3& position, float scal
 	orientation = glm::quat(1, 0, 0, 0);
 	colour = glm::vec3(0.5f); // default grey color
 	visible = true;
+	collidable = true;
 	computeLocalBounds();
 }
 

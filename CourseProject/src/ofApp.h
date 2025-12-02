@@ -94,9 +94,11 @@ private:
 	ofTrueTypeFont menu_button_font;
 	ofTrueTypeFont menu_title_font;
 	ofTrueTypeFont menu_caption_font;
+	ofTrueTypeFont game_over_font;
 	ofImage menu_background;
 	ofRectangle start_button_rect;
 	ofRectangle quit_button_rect;
+
 
 	// game state indicators
 	unsigned short int game_state; // 0 = main menu, 1 = gameplay, 2 = game over, 3 = game won 
@@ -126,12 +128,20 @@ private:
 	bool showTextBox;
 	bool show_interact_tip;
 
-	// for enemy spawning
+	// bullet hell stuff
 	EnemySpawner enemySpawner;
 	bool bloodBulletHellActive;
+	bool isBulletHellComplete;
 	Timer bloodBulletHellTimer;
+	GameObject* bulletHellWall;
 	void startBloodBulletHell(float duration = 30.0f);
 	void endBloodBulletHell();
+	void updateBulletHellWall();
+	void bulletHellComplete();
+	CheckpointGameObject* bulletHellCheckpoint;
+
+	// game over timer
+	Timer gameOverTimer;
 
 	// ----------------- Constants -----------------
 	const unsigned short int GAME_FPS = 144;

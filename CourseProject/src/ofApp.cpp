@@ -95,8 +95,7 @@ void ofApp::setup() {
 	power_up_vec.push_back(new PowerUpObject(power_up_mesh.getMesh(), glm::vec3(0, 0, 200), 1.f));
 	power_up_vec.push_back(new PowerUpObject(power_up_mesh.getMesh(), glm::vec3(0, 0, -200), 1.f));
 
-	// checkpoint to tp to bonemarrow
-	checkpoint_vec.push_back(new CheckpointGameObject(power_up_mesh.getMesh(), glm::vec3(-300, 100, 200), 1.f));
+	// checkpoint_vec.push_back(new CheckpointGameObject(power_up_mesh.getMesh(), glm::vec3(-300, 100, 200), 1.f));
 
 	// setup red blood cell particle system
 	rbc = new ParticleSystem(player->getCamera(), 25);
@@ -126,6 +125,7 @@ void ofApp::setup() {
 		menu_button_font.load("fonts/ArialMedium.ttf", 32);
 		menu_title_font.load("fonts/PapyrusBold.ttf", 96);
 		menu_caption_font.load("fonts/ArialMedium.ttf", 14);
+		game_over_font.load("fonts/ArialMedium.ttf", 72);
 		menu_background.load("images/menu_bg.jpg");
 		dialog_font.load("fonts/ArialMedium.ttf", 24);
 	}
@@ -143,19 +143,17 @@ void ofApp::setup() {
 	textBox.setBorderWidth(3.0f);
 	showTextBox = false;
 
-	// create collidable geometry, store in player so collision resolving works properly
-	createWalls();
-	player->setWalls(&wall_objects_vec);
-
 	// bullet hell spawn stuff
 	bulletHellEnemyMesh.set(30, 100);
 	enemySpawner.setup(&bulletHellEnemyMesh.getMesh());
 	bloodBulletHellActive = false;
+	isBulletHellComplete = false;
 
 	// setup the interactable objects
 	glm::vec3 vein1_pos(600, 50, 130);
 	glm::vec3 vein2_pos(-830, 70, 1350);
 	glm::vec3 vein3_pos(-2250, 45, 425);
+	glm::vec3 vein4_pos(-3950, 100, 950);
 
 	GameObject* interact_obj1 = new GameObject(power_up_mesh.getMesh(), vein1_pos, 1.f);
 	interact_obj1->setColour(glm::vec3(1.0f, 0.9f, 0.4f));
@@ -168,6 +166,27 @@ void ofApp::setup() {
 	GameObject* interact_obj3 = new GameObject(power_up_mesh.getMesh(), vein3_pos, 1.f);
 	interact_obj3->setColour(glm::vec3(1.0f, 0.9f, 0.4f));
 	interactables_vec.push_back(interact_obj3);
+
+	GameObject* interact_obj4 = new GameObject(power_up_mesh.getMesh(), vein4_pos, 1.f);
+	interact_obj4->setColour(glm::vec3(1.0f, 0.9f, 0.4f));
+	interactables_vec.push_back(interact_obj4);
+
+	// -2980, 975
+	ofBoxPrimitive bulletHellWallMesh;
+	bulletHellWallMesh.set(300, 300, 20);
+	bulletHellWall = new GameObject(bulletHellWallMesh.getMesh(), glm::vec3(-2980, 300 / 2 - 50, 975), 1.0f);
+	bulletHellWall->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(bulletHellWall);
+
+	// create collidable geometry, store in player so collision resolving works properly
+	createWalls();
+	player->setWalls(&wall_objects_vec);
+	
+	// make bullet hell checkpoint but have it not be visible or collidable until the user completes the bullet hell
+	bulletHellCheckpoint = new CheckpointGameObject(power_up_mesh.getMesh(), glm::vec3(-3500, -10, 950), 1.f, glm::vec3(6000, 0, 0));
+	bulletHellCheckpoint->setVisible(false);
+	bulletHellCheckpoint->setCollidable(false);
+	checkpoint_vec.push_back(bulletHellCheckpoint);
 
 	// play main menu music
 	menu_music.play();
@@ -258,99 +277,112 @@ void ofApp::update() {
 	// -------------------- GAMEPLAY GAME STATE ---------------------------
 	else if (game_state == 1) {
 
-		// test (light source)
-		orbitAngle += orbitSpeed * ofGetLastFrameTime();
-
-		/*** PLAYER HANDLING ***/
-
-		player->update(delta_time);
-
-		// check if player should be able to be hit
-		if (player->getInvincibilityTimer().FinishedAndStop()) {
-			player->setColour(glm::vec3(255.0f));
+		if (player->getHealth() <= 0) {
+			gameOverTimer.Start(5.0f);
+			game_state = 2;
 		}
 
-		/*** ENEMY HANDLING (OLD) ***/
+		else {
+			// test (light source)
+			orbitAngle += orbitSpeed * ofGetLastFrameTime();
 
-		// updates for opps
-		
-		/*
-		for (int i = 0; i < opposition_vec.size(); ++i) {
-			EnemyGameObject* enemy = opposition_vec[i];
-			enemy->faceTowards(player->getPosition());
-			enemy->update(delta_time);
+			/*** PLAYER HANDLING ***/
 
-			// check for collisions between an enemy and the player
-			float dist = glm::distance(player->getPosition(), enemy->getPosition());
-			if (dist <= player->getRadius() + enemy->getRadius() && !player->getInvincibilityTimer().IsRunning()) {
+			player->update(delta_time);
 
-				// handle damage
-				player->getInvincibilityTimer().Start(2.0f);
-				player->setColour(glm::vec3(255.0f, 0.0f, 50.0f));
-				player->setHealth(player->getHealth() - 1);
-				// add SSE or other indicator that damage occurred
-
-				// clean up enemy
-				delete enemy;
-				opposition_vec.erase(opposition_vec.begin() + i);
+			// check if player should be able to be hit
+			if (player->getInvincibilityTimer().FinishedAndStop()) {
+				//player->setColour(glm::vec3(255.0f));
 			}
-		}
-		*/
 
-		// blood bullet hell stuff (all collision detection and deletion and allat is handled in the class by passing in the player)
-		if (bloodBulletHellActive) {
-			enemySpawner.update(delta_time, player);
-			// end after certain amount of time
-			if (bloodBulletHellTimer.FinishedAndStop()) {
-				endBloodBulletHell();
+			/*** ENEMY HANDLING (OLD) ***/
+
+			// updates for opps
+
+			/*
+			for (int i = 0; i < opposition_vec.size(); ++i) {
+				EnemyGameObject* enemy = opposition_vec[i];
+				enemy->faceTowards(player->getPosition());
+				enemy->update(delta_time);
+
+				// check for collisions between an enemy and the player
+				float dist = glm::distance(player->getPosition(), enemy->getPosition());
+				if (dist <= player->getRadius() + enemy->getRadius() && !player->getInvincibilityTimer().IsRunning()) {
+
+					// handle damage
+					player->getInvincibilityTimer().Start(2.0f);
+					player->setColour(glm::vec3(255.0f, 0.0f, 50.0f));
+					player->setHealth(player->getHealth() - 1);
+					// add SSE or other indicator that damage occurred
+
+					// clean up enemy
+					delete enemy;
+					opposition_vec.erase(opposition_vec.begin() + i);
+				}
 			}
-		}
+			*/
 
-		/*** CHECKPOINT HANDLING ***/
-
-		for (int i = 0; i < checkpoint_vec.size(); ++i) {
-			CheckpointGameObject* checkpoint = checkpoint_vec[i];
-
-			// Check for collision with checkpoint
-			float dist = glm::distance(player->getPosition(), checkpoint->getPosition());
-			if (dist <= player->getRadius() + checkpoint->getRadius()) {
-
-				// Teleport player and change environment
-				handleCheckpointCollision(checkpoint);
-
-				// Remove the checkpoint
-				delete checkpoint;
-				checkpoint_vec.erase(checkpoint_vec.begin() + i);
-				break; // Exit loop since we modified the vector
+			// blood bullet hell stuff (all collision detection and deletion and allat is handled in the class by passing in the player)
+			if (bloodBulletHellActive) {
+				enemySpawner.update(delta_time, player);
+				// end after certain amount of time
+				if (bloodBulletHellTimer.FinishedAndStop()) {
+					endBloodBulletHell();
+					// redundant but yea
+					if (player->getHealth() > 0) {
+						bulletHellComplete();
+					}
+				}
 			}
-		}
 
-		/*** INTERACTABLE HANDLING ***/
+			/*** CHECKPOINT HANDLING ***/
 
-		// check if player is in interact range
-		bool player_in_range = false;
-		for (GameObject* interact_obj : interactables_vec) {
-			if (glm::distance(interact_obj->getPosition(), player->getPosition()) < INTERACT_RANGE) {
-				player_in_range = true;
+			for (int i = 0; i < checkpoint_vec.size(); ++i) {
+				CheckpointGameObject* checkpoint = checkpoint_vec[i];
+
+				// Check for collision with checkpoint
+				float dist = glm::distance(player->getPosition(), checkpoint->getPosition());
+				if (dist <= player->getRadius() + checkpoint->getRadius() && checkpoint->isCollidable()) {
+
+					// Teleport player and change environment
+					handleCheckpointCollision(checkpoint);
+
+					// Remove the checkpoint
+					delete checkpoint;
+					checkpoint_vec.erase(checkpoint_vec.begin() + i);
+					break; // Exit loop since we modified the vector
+				}
 			}
+
+			/*** INTERACTABLE HANDLING ***/
+
+			// check if player is in interact range
+			bool player_in_range = false;
+			for (GameObject* interact_obj : interactables_vec) {
+				if (glm::distance(interact_obj->getPosition(), player->getPosition()) < INTERACT_RANGE) {
+					player_in_range = true;
+				}
+			}
+			if (player_in_range) show_interact_tip = true;
+			else show_interact_tip = false;
+
+			/*** OTHER (testing most likely) ***/
+
+			// rbc movement testing
+			/*
+			glm::vec3 dir(1, 0, 0);
+			dir += 10 * delta_time;
+			redBloodCell->setPosition(redBloodCell->getPosition() + dir);
+			*/
+			redBloodCell->update(delta_time);
 		}
-		if (player_in_range) show_interact_tip = true;
-		else show_interact_tip = false;
-
-		/*** OTHER (testing most likely) ***/
-
-		// rbc movement testing
-		/*
-		glm::vec3 dir(1, 0, 0);
-		dir += 10 * delta_time;
-		redBloodCell->setPosition(redBloodCell->getPosition() + dir);
-		*/
-		redBloodCell->update(delta_time);
 	}
 
 	// -------------------- GAME OVER GAME STATE ---------------------------
 	else if (game_state == 2) {
-		
+		if (gameOverTimer.Finished()) {
+			exit();
+		}
 	}
 
 	// -------------------- GAME WON GAME STATE ---------------------------
@@ -577,13 +609,18 @@ void ofApp::draw() {
 		ofDrawBitmapString("Y-pos: " + to_string(player->getPosition().y), glm::vec2(30, 60));
 		ofDrawBitmapString("Z-pos: " + to_string(player->getPosition().z), glm::vec2(30, 70));
 		ofDrawBitmapString("Health: " + to_string(player->getHealth()), glm::vec2(30, 90));
-		ofDrawBitmapString("Veins Infected: " + to_string(veins_infected_count) + " / 3", glm::vec2(30, 110));
+		ofDrawBitmapString("Veins Infected: " + to_string(veins_infected_count) + " / 4", glm::vec2(30, 110));
 
 	}
 
 	// -------------------- GAME OVER GAME STATE ---------------------------
 	else if (game_state == 2) {
-		// to-do
+		if (!gameOverTimer.Finished()) {
+			ofRectangle title_bounds = game_over_font.getStringBoundingBox("GAME OVER!", 0, 0);
+			float title_x = ofGetWidth() / 2.0f - (title_bounds.width / 2.0f);
+			float title_y = ofGetHeight() / 2.0f;
+			game_over_font.drawString("GAME OVER!", title_x, title_y);
+		}
 	}
 
 	// -------------------- GAME WON GAME STATE ---------------------------
@@ -618,9 +655,12 @@ void ofApp::keyPressed(int key) {
 						interactables_vec.erase(interactables_vec.begin() + i);
 						delete interactable;
 
-						veins_infected_count++;
-						infect_sound.play();
-					}
+            veins_infected_count++;
+            infect_sound.play();
+
+            updateBulletHellWall();
+
+            break;
 				}
 			}
 		}
@@ -652,11 +692,13 @@ void ofApp::keyPressed(int key) {
 		textBox.showTemporarily(4.0f);
 	}
 
+	/*
 	if (key == 'g' || key == 'G') {
 		if (!bloodBulletHellActive) {
 			startBloodBulletHell(30.0f);
 		}
 	}
+	*/
 }
 
 
@@ -824,15 +866,16 @@ void ofApp::recenterCursorToWindowCenter() {
 // Helper method, handles what should happen when the player hits a checkpoint
 void ofApp::handleCheckpointCollision(CheckpointGameObject* checkpoint) {
 
-	if (bloodstream) {
+	player->setPosition(checkpoint->getTeleportPosition());
+	// in bloodstream, going to bone marrow
+	if (bloodstream && isBulletHellComplete) {
 		bloodstream = false;
 		boneMarrow = true;
 
 		// Change skybox texture
-		//skyTexture.load("images/bone_marrow_texture.jpg");
+		skyTexture.load("images/DOG.png");
 
 		// Teleport player to new area
-		player->setPosition(glm::vec3(0, 100, 0));
 
 		/*
 		orbitRadius = 200;
@@ -1149,6 +1192,16 @@ void ofApp::createVeins(void) {
 	vein3->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 0, 1)));
 	wall_objects_vec.push_back(vein3);
 
+	// fourth vein, causes blood bullet hell to start -3950 950
+	ofCylinderPrimitive vein_mesh4;
+	vein_mesh4.set(radius, 300.0f);
+	vein_mesh4.setResolution(18, 2);
+	glm::vec3 vein4_pos(-3975, 100, 950);
+	GameObject* vein4 = new GameObject(vein_mesh4.getMesh(), vein4_pos, 1.0f);
+	//vein4->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(1, 0, 0)));
+	wall_objects_vec.push_back(vein4);
+
+
 }
 
 // functions to start/end blood bullet hell
@@ -1156,12 +1209,41 @@ void ofApp::startBloodBulletHell(float duration) {
 	bloodBulletHellActive = true;
 	bloodBulletHellTimer.Start(duration);
 	enemySpawner.startSpawning(0.25f);
-	ofLog() << "Bullet Hell Start";
+	//ofLog() << "Bullet Hell Start";
 }
 
 void ofApp::endBloodBulletHell() {
 	bloodBulletHellActive = false;
 	enemySpawner.stopSpawning();
 	enemySpawner.clearEnemies();
-	ofLog() << "Bullet Hell End";
+	//ofLog() << "Bullet Hell End";
+}
+
+// updates the wall going into the bullet hell room
+void ofApp::updateBulletHellWall() {
+	if (!bulletHellWall) return;
+
+	// if 3 veins infected, hide the wall and make sure the player cant collide with it
+	if (veins_infected_count == 3) {
+		bulletHellWall->setVisible(false);
+		bulletHellWall->setCollidable(false);
+	}
+	// if 4 veins infected (the last one is in the bullet hell room), restore the wall
+	else if (veins_infected_count == 4) {
+		bulletHellWall->setVisible(true);
+		bulletHellWall->setCollidable(true);
+
+		// also automatically start the bullet hell
+		if (!bloodBulletHellActive) {
+			startBloodBulletHell(30.0f);
+		}
+	}
+}
+
+// handle when the player completes the bullet hell
+void ofApp::bulletHellComplete() {
+	isBulletHellComplete = true;
+	// display some text here
+	bulletHellCheckpoint->setVisible(true);
+	bulletHellCheckpoint->setCollidable(true);
 }
