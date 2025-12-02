@@ -21,6 +21,7 @@ public:
 	inline const bool isVisible() const { return visible; }
 	inline const glm::vec3& getLocalMinBound() const { return localMinBound; }
 	inline const glm::vec3& getLocalMaxBound() const { return localMaxBound; }
+	inline bool isCollidable() const { return collidable; }
 
 	// setters
 	inline void setPosition(const glm::vec3& pos) { position = pos; }
@@ -29,6 +30,7 @@ public:
 	inline void setMesh(const ofMesh& m) { mesh = m; computeLocalBounds(); }
 	inline void setColour(const glm::vec3& c) { colour = c; }
 	inline void setVisible(bool v) { visible = v; }
+	inline void setCollidable(bool c) { collidable = c; }
 	
 	// render and logic specific
 	virtual void draw(ofShader* lightingShader);
@@ -38,6 +40,7 @@ public:
 	glm::vec3 getqUp() { return orientation * BASE_UP; }
 	glm::mat4 getWorldMatrix();
 	void computeLocalBounds();
+
 
 protected:
 
@@ -53,6 +56,7 @@ protected:
 	bool visible;
 	glm::vec3 localMinBound;
 	glm::vec3 localMaxBound;
+	bool collidable;
 
 };
 
