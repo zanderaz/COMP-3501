@@ -50,11 +50,24 @@ public:
 
 	// collidable object creation
 	void createWalls();
+
+	// blood stream helper functions
 	void createWallsSection1();
 	void createWallsSection2();
 	void createWallsSection3();
 	void createWallsSection4();
 	void createVeins();
+	void startBloodBulletHell(float duration = 30.0f);
+	void endBloodBulletHell();
+	void updateBulletHellWall();
+	void bulletHellComplete();
+
+	// bone marrow helper functions
+	void updateBoneMarrowBlockingWalls();
+	void createWallsSection5();
+	void createWallsSection6();
+	void createWallsSection7();
+
 
 private:
 
@@ -112,10 +125,10 @@ private:
 	// game state indicators
 	unsigned short int game_state; // 0 = main menu, 1 = gameplay, 2 = game over, 3 = game won 
 	bool is_muted;
-	unsigned short int veins_infected_count;
+	unsigned short int veins_infected_count, marrow_infected_count;
 
 	// textures
-	ofImage texture, skyTexture, wallTexture;
+	ofImage texture, skyTexture, bloodstreamWallTexture, boneMarrowWallTexture;
 
 	// priority renders: light source, skybox, use texture flag
 	glm::vec3 light_pos;
@@ -142,11 +155,11 @@ private:
 	bool isBulletHellComplete;
 	Timer bloodBulletHellTimer;
 	GameObject* bulletHellWall;
-	void startBloodBulletHell(float duration = 30.0f);
-	void endBloodBulletHell();
-	void updateBulletHellWall();
-	void bulletHellComplete();
 	CheckpointGameObject* bulletHellCheckpoint;
+
+	// bone marrow
+	GameObject* boneMarrowBlockingWall1;
+	GameObject* boneMarrowBlockingWall2;
 
 	// game over timer
 	Timer gameOverTimer;
@@ -160,7 +173,7 @@ private:
 	const string QUIT_TEXT = "Quit Game";
 	const string INTERACT_TEXT = "Press ' f ' to Infect.";
 
-	const float INTERACT_RANGE = 200.0f;
+	const float INTERACT_RANGE = 100.0f;
 
 	const float MUSIC_VOL = 0.2f;
 	const float SFX_VOL = 0.4f;

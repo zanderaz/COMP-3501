@@ -40,7 +40,8 @@ void ofApp::setup() {
 	texture.load("images/DOG.png");
 	skyTexture.load("images/blood.jpg");
 	skyTexture.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
-	wallTexture.load("images/bloodold.jpeg");
+	bloodstreamWallTexture.load("images/bloodold.jpeg");
+	boneMarrowWallTexture.load("images/bonemarrow.jpg");
 
 	// init sounds
 	try {
@@ -121,27 +122,74 @@ void ofApp::setup() {
 	showTextBox = false;
 
 	// setup the interactable objects
-	glm::vec3 vein1_pos(600, 50, 130);
-	glm::vec3 vein2_pos(-830, 70, 1350);
-	glm::vec3 vein3_pos(-2250, 45, 425);
-	glm::vec3 vein4_pos(-3950, 100, 950);
+	// bloodstream
+	glm::vec3 infect1_pos(600, 50, 130);
+	glm::vec3 infect2_pos(-830, 70, 1350);
+	glm::vec3 infect3_pos(-2250, 45, 425);
+	glm::vec3 infect4_pos(-3950, 100, 950);
 
-	GameObject* interact_obj1 = new GameObject(power_up_mesh.getMesh(), vein1_pos, 1.f);
+	// bone marrow
+	glm::vec3 infect5_pos(13295, 150, 1035);
+	glm::vec3 infect6_pos(13340, 60, 985);
+	glm::vec3 infect7_pos(13465, 100, 710);
+	glm::vec3 infect8_pos(13160, 100, -50);
+	glm::vec3 infect9_pos(10800, 100, -150);
+	glm::vec3 infect10_pos(11200, 100, 0);
+	glm::vec3 infect11_pos(12665, 100, 700);
+	glm::vec3 infect12_pos(11890, 100, 125);
+
+
+	// bloodstream interactables
+	GameObject* interact_obj1 = new GameObject(power_up_mesh.getMesh(), infect1_pos, 1.f);
 	interact_obj1->setColour(glm::vec3(1.0f, 0.9f, 0.4f));
 	interactables_vec.push_back(interact_obj1);
 
-	GameObject* interact_obj2 = new GameObject(power_up_mesh.getMesh(), vein2_pos, 1.f);
+	GameObject* interact_obj2 = new GameObject(power_up_mesh.getMesh(), infect2_pos, 1.f);
 	interact_obj2->setColour(glm::vec3(1.0f, 0.9f, 0.4f));
 	interactables_vec.push_back(interact_obj2);
 
-	GameObject* interact_obj3 = new GameObject(power_up_mesh.getMesh(), vein3_pos, 1.f);
+	GameObject* interact_obj3 = new GameObject(power_up_mesh.getMesh(), infect3_pos, 1.f);
 	interact_obj3->setColour(glm::vec3(1.0f, 0.9f, 0.4f));
 	interactables_vec.push_back(interact_obj3);
 
-	GameObject* interact_obj4 = new GameObject(power_up_mesh.getMesh(), vein4_pos, 1.f);
+	GameObject* interact_obj4 = new GameObject(power_up_mesh.getMesh(), infect4_pos, 1.f);
 	interact_obj4->setColour(glm::vec3(1.0f, 0.9f, 0.4f));
 	interactables_vec.push_back(interact_obj4);
 
+	// bone marrow interactables
+	GameObject* interact_obj5 = new GameObject(power_up_mesh.getMesh(), infect5_pos, 1.f);
+	interact_obj5->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
+	interactables_vec.push_back(interact_obj5);
+
+	GameObject* interact_obj6 = new GameObject(power_up_mesh.getMesh(), infect6_pos, 1.f);
+	interact_obj6->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
+	interactables_vec.push_back(interact_obj6);
+
+	GameObject* interact_obj7 = new GameObject(power_up_mesh.getMesh(), infect7_pos, 1.f);
+	interact_obj7->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
+	interactables_vec.push_back(interact_obj7);
+
+	GameObject* interact_obj8 = new GameObject(power_up_mesh.getMesh(), infect8_pos, 1.f);
+	interact_obj8->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
+	interactables_vec.push_back(interact_obj8);
+
+	GameObject* interact_obj9 = new GameObject(power_up_mesh.getMesh(), infect9_pos, 1.f);
+	interact_obj9->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
+	interactables_vec.push_back(interact_obj9);
+
+	GameObject* interact_obj10 = new GameObject(power_up_mesh.getMesh(), infect10_pos, 1.f);
+	interact_obj10->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
+	interactables_vec.push_back(interact_obj10);
+
+	GameObject* interact_obj11 = new GameObject(power_up_mesh.getMesh(), infect11_pos, 1.f);
+	interact_obj11->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
+	interactables_vec.push_back(interact_obj11);
+
+	GameObject* interact_obj12 = new GameObject(power_up_mesh.getMesh(), infect12_pos, 1.f);
+	interact_obj12->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
+	interactables_vec.push_back(interact_obj12);
+
+	// to block bullet hell (until infected all necessary objects)
 	// bullet hell spawn stuff
 	bulletHellEnemyMesh.set(30, 100);
 	enemySpawner.setup(&bulletHellEnemyMesh.getMesh());
@@ -155,12 +203,25 @@ void ofApp::setup() {
 	bulletHellWall->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
 	wall_objects_vec.push_back(bulletHellWall);
 
+	// to block certain spots of bone marrow (until infected all necessary objects)
+	ofBoxPrimitive boneMarrowWallMesh;
+	boneMarrowWallMesh.set(300, 300, 20);
+	boneMarrowBlockingWall1 = new GameObject(boneMarrowWallMesh.getMesh(), glm::vec3(12700, 300 / 2 - 50, 450), 1.0f);
+	boneMarrowBlockingWall1->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(boneMarrowBlockingWall1);
+
+	// 11670 11445
+	boneMarrowWallMesh.set(250, 300, 20);
+	boneMarrowBlockingWall2 = new GameObject(boneMarrowWallMesh.getMesh(), glm::vec3(11557.5, 300 / 2 - 50, -1055), 1.0f);
+	wall_objects_vec.push_back(boneMarrowBlockingWall2);
+
+
 	// create collidable geometry, store in player so collision resolving works properly
 	createWalls();
 	player->setWalls(&wall_objects_vec);
 	
 	// make bullet hell checkpoint but have it not be visible or collidable until the user completes the bullet hell
-	bulletHellCheckpoint = new CheckpointGameObject(power_up_mesh.getMesh(), glm::vec3(-3500, -10, 950), 1.f, glm::vec3(6000, 0, 0));
+	bulletHellCheckpoint = new CheckpointGameObject(power_up_mesh.getMesh(), glm::vec3(-3500, -10, 950), 1.f, glm::vec3(15000, 0, 0));
 	bulletHellCheckpoint->setVisible(false);
 	bulletHellCheckpoint->setCollidable(false);
 	checkpoint_vec.push_back(bulletHellCheckpoint);
@@ -367,7 +428,7 @@ void ofApp::update() {
 	// -------------------- GAME OVER GAME STATE ---------------------------
 	else if (game_state == 2) {
 		if (gameOverTimer.Finished()) {
-			exit();
+			ofExit();
 		}
 	}
 
@@ -534,8 +595,11 @@ void ofApp::draw() {
 		if (bUseTexture) lightingShader->setUniform1i("useTexture", 1);
 
 		// different texture for walls
-		if (bUseTexture) {
-			lightingShader->setUniformTexture("tex0", wallTexture, 0);
+		if (bUseTexture && bloodstream) {
+			lightingShader->setUniformTexture("tex0", bloodstreamWallTexture, 0);
+		}
+		else if (bUseTexture && boneMarrow) {
+			lightingShader->setUniformTexture("tex0", boneMarrowWallTexture, 0);
 		}
 		for (GameObject* wall : wall_objects_vec) {
 			wall->draw(lightingShader);
@@ -575,8 +639,8 @@ void ofApp::draw() {
 		ofDrawBitmapString("Y-pos: " + to_string(player->getPosition().y), glm::vec2(30, 60));
 		ofDrawBitmapString("Z-pos: " + to_string(player->getPosition().z), glm::vec2(30, 70));
 		ofDrawBitmapString("Health: " + to_string(player->getHealth()), glm::vec2(30, 90));
-		ofDrawBitmapString("Veins Infected: " + to_string(veins_infected_count) + " / 4", glm::vec2(30, 110));
-
+		if (bloodstream) ofDrawBitmapString("Veins Infected: " + to_string(veins_infected_count) + " / 4", glm::vec2(30, 110));
+		else if (boneMarrow) ofDrawBitmapString("Marrow Infected: " + to_string(marrow_infected_count) + " / 8", glm::vec2(30, 110));
 	}
 
 	// -------------------- GAME OVER GAME STATE ---------------------------
@@ -599,6 +663,28 @@ void ofApp::draw() {
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key) {
 
+	// interact key
+	if (key == 'f' || key == 'F') {
+		if (show_interact_tip) {
+
+			// check which interactable needs to get infected and removed
+			for (int i = 0; i < interactables_vec.size(); ++i) {
+				if (glm::distance(interactables_vec[i]->getPosition(), player->getPosition()) < INTERACT_RANGE) {
+					GameObject* interactable = interactables_vec[i];
+					interactables_vec.erase(interactables_vec.begin() + i);
+					delete interactable;
+
+					if (bloodstream) {
+						veins_infected_count++;
+						updateBulletHellWall();
+					}
+					else if (boneMarrow) {
+						marrow_infected_count++;
+						updateBoneMarrowBlockingWalls();
+					}
+
+					infect_sound.play();
+          
 	// --------------------- gameplay related keybinds --------------------------
 	if (game_state == 1) {
 
@@ -619,10 +705,16 @@ void ofApp::keyPressed(int key) {
 					if (glm::distance(interactables_vec[i]->getPosition(), player->getPosition()) < INTERACT_RANGE) {
 						GameObject* interactable = interactables_vec[i]; // found vein to infect
 						
-						veins_infected_count++;
+            if (bloodstream) {
+						  veins_infected_count++;
+						  updateBulletHellWall();
+					  }
+					  else if (boneMarrow) {
+						  marrow_infected_count++;
+						  updateBoneMarrowBlockingWalls();
+					  }
 						infect_sound.play();
 						spawnInfectedPS(interactable->getPosition());
-						updateBulletHellWall();
 
 						interactables_vec.erase(interactables_vec.begin() + i);
 						delete interactable;
@@ -666,6 +758,13 @@ void ofApp::keyPressed(int key) {
 		}
 	}
 	*/
+
+	if (key == 'l' || key == 'L') {
+		player->setPosition(glm::vec3(15000, 0, 0));
+		boneMarrow = !boneMarrow;
+		//marrow_infected_count = 4;
+		//updateBoneMarrowBlockingWalls();
+	}
 }
 
 
@@ -895,11 +994,17 @@ void ofApp::spawnInfectedPS(const glm::vec3& position) {
 
 // create walls for the play area, as well as any other collidable objects 
 void ofApp::createWalls() {
+	// bloodstream
 	createWallsSection1();
 	createWallsSection2();
 	createWallsSection3();
 	createWallsSection4();
 	createVeins();
+
+	// bone marrow
+	createWallsSection5();
+	createWallsSection6();
+	createWallsSection7();
 
 	/*
 	ofLog() << "Created walls: " << wall_objects_vec.size() << " objects";
@@ -923,7 +1028,7 @@ void ofApp::createWallsSection1() {
 
 	// floor
 	ofBoxPrimitive floorMesh;
-	floorMesh.set(20000, 5, 20000);
+	floorMesh.set(10000, 5, 10000);
 	GameObject* floor = new GameObject(floorMesh.getMesh(), glm::vec3(0, -50, 0), 1.0f);
 	wall_objects_vec.push_back(floor);
 
@@ -990,10 +1095,6 @@ void ofApp::createWallsSection2() {
 	float wallThickness = 20.0f;
 	float wallHeight = 300.0f;
 
-	// hallway dimensions
-	float hallwayLength = 400.0f;
-	float hallwayWidth = 200.0f;
-
 	// back wall out of first room
 	ofBoxPrimitive frontWallMesh;
 	frontWallMesh.set(1600, wallHeight, wallThickness);
@@ -1027,10 +1128,6 @@ void ofApp::createWallsSection3() {
 	
 	float wallThickness = 20.0f;
 	float wallHeight = 300.0f;
-
-	// hallway dimensions
-	float hallwayLength = 400.0f;
-	float hallwayWidth = 200.0f;
 
 	// diagonal hallway to the right of start
 	ofBoxPrimitive diagonalWallMesh;
@@ -1126,10 +1223,6 @@ void ofApp::createWallsSection4() {
 	float wallThickness = 20.0f;
 	float wallHeight = 300.0f;
 
-	// hallway dimensions
-	float hallwayLength = 400.0f;
-	float hallwayWidth = 200.0f;
-
 	// entrance split walls
 	ofBoxPrimitive entranceWalls;
 	entranceWalls.set(600, wallHeight, wallThickness);
@@ -1164,7 +1257,6 @@ void ofApp::createWallsSection4() {
 	wall_objects_vec.push_back(obstacle1);
 	*/
 }
-
 
 // create veins that can be infected
 void ofApp::createVeins(void) {
@@ -1207,7 +1299,58 @@ void ofApp::createVeins(void) {
 	//vein4->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(1, 0, 0)));
 	wall_objects_vec.push_back(vein4);
 
+	// bone marrow
+	ofCylinderPrimitive vein_mesh5;
+	vein_mesh5.set(radius, 320.0f);
+	vein_mesh5.setResolution(18, 2);
+	glm::vec3 vein5_pos(13325, 100, 1025);
+	GameObject* vein5 = new GameObject(vein_mesh5.getMesh(), vein5_pos, 1.0f);
+	//vein4->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(1, 0, 0)));
+	wall_objects_vec.push_back(vein5);
 
+	ofCylinderPrimitive vein_mesh6;
+	vein_mesh6.set(radius, 285.0f);
+	vein_mesh6.setResolution(18, 2);
+	glm::vec3 vein6_pos(13465, 100, 675);
+	GameObject* vein6 = new GameObject(vein_mesh6.getMesh(), vein6_pos, 1.0f);
+	vein6->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 0, 1)));
+	wall_objects_vec.push_back(vein6);
+
+	ofCylinderPrimitive vein_mesh7;
+	vein_mesh7.set(radius, 285.0f);
+	vein_mesh7.setResolution(18, 2);
+	glm::vec3 vein7_pos(13160, 100, -100);
+	GameObject* vein7 = new GameObject(vein_mesh7.getMesh(), vein7_pos, 1.0f);
+	vein7->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 0, 1)));
+	wall_objects_vec.push_back(vein7);
+
+	ofCylinderPrimitive vein_mesh8;
+	vein_mesh8.set(radius, 300.0f);
+	vein_mesh8.setResolution(18, 2);
+	glm::vec3 vein8_pos(10800, 100, -185);
+	GameObject* vein8 = new GameObject(vein_mesh8.getMesh(), vein8_pos, 1.0f);
+	wall_objects_vec.push_back(vein8);
+
+	ofCylinderPrimitive vein_mesh9;
+	vein_mesh9.set(radius, 300.0f);
+	vein_mesh9.setResolution(18, 2);
+	glm::vec3 vein9_pos(11200, 100, 35);
+	GameObject* vein9 = new GameObject(vein_mesh9.getMesh(), vein9_pos, 1.0f);
+	wall_objects_vec.push_back(vein9);
+
+	ofCylinderPrimitive vein_mesh10;
+	vein_mesh10.set(radius, 300.0f);
+	vein_mesh10.setResolution(18, 2);
+	glm::vec3 vein10_pos(12700, 100, 700);
+	GameObject* vein10 = new GameObject(vein_mesh10.getMesh(), vein10_pos, 1.0f);
+	wall_objects_vec.push_back(vein10);
+
+	ofCylinderPrimitive vein_mesh11;
+	vein_mesh11.set(radius, 300.0f);
+	vein_mesh11.setResolution(18, 2);
+	glm::vec3 vein11_pos(11925, 100, 120);
+	GameObject* vein11 = new GameObject(vein_mesh11.getMesh(), vein11_pos, 1.0f);
+	wall_objects_vec.push_back(vein11);
 }
 
 // functions to start/end blood bullet hell
@@ -1255,4 +1398,214 @@ void ofApp::bulletHellComplete() {
 	// display some text here
 	bulletHellCheckpoint->setVisible(true);
 	bulletHellCheckpoint->setCollidable(true);
+}
+
+void ofApp::updateBoneMarrowBlockingWalls() {
+	if (marrow_infected_count == 4) {
+		boneMarrowBlockingWall1->setCollidable(false);
+		boneMarrowBlockingWall1->setVisible(false);
+	}
+
+	else if (marrow_infected_count == 8) {
+		boneMarrowBlockingWall2->setCollidable(false);
+		boneMarrowBlockingWall2->setVisible(false);
+	}
+}
+
+// start of bone marrow area
+void ofApp::createWallsSection5() {
+	// wall dimensions
+	float wallThickness = 20.0f;
+	float wallHeight = 300.0f;
+
+	// floor
+	ofBoxPrimitive floorMesh;
+	floorMesh.set(10000, 5, 10000);
+	GameObject* floor = new GameObject(floorMesh.getMesh(), glm::vec3(15000, -50, 0), 1.0f);
+	wall_objects_vec.push_back(floor);
+
+	ofBoxPrimitive ceilingMesh;
+	ceilingMesh.set(10000, 5, 10000);
+	GameObject* ceiling = new GameObject(ceilingMesh.getMesh(), glm::vec3(15000, wallHeight - 50, 0), 1.0f);
+	ceiling->setVisible(false);
+	wall_objects_vec.push_back(ceiling);
+
+	// starting area
+
+	ofBoxPrimitive startingWallMesh;
+	startingWallMesh.set(400, wallHeight, wallThickness);
+	GameObject* startingWall1 = new GameObject(startingWallMesh.getMesh(), glm::vec3(15200, wallHeight / 2 - 50, 0), 1.0f);
+	startingWall1->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(startingWall1);
+
+	startingWallMesh.set(600, wallHeight, wallThickness);
+	GameObject* startingWall2 = new GameObject(startingWallMesh.getMesh(), glm::vec3(14900, wallHeight / 2 - 50, 200), 1.0f);
+	wall_objects_vec.push_back(startingWall2);
+
+	GameObject* startingWall3 = new GameObject(startingWallMesh.getMesh(), glm::vec3(14900, wallHeight / 2 - 50, -200), 1.0f);
+	wall_objects_vec.push_back(startingWall3);
+
+	ofBoxPrimitive firstHallwayMesh;
+	firstHallwayMesh.set(1200, wallHeight, wallThickness);
+	GameObject* firstHallwayWall1 = new GameObject(firstHallwayMesh.getMesh(), glm::vec3(14300, wallHeight / 2 - 50, 0), 1.0f);
+	firstHallwayWall1->setOrientation(glm::angleAxis(glm::radians(30.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(firstHallwayWall1);
+
+	firstHallwayMesh.set(800, wallHeight, wallThickness);
+	GameObject* firstHallwayWall2 = new GameObject(firstHallwayMesh.getMesh(), glm::vec3(14260, wallHeight / 2 - 50, 400), 1.0f);
+	firstHallwayWall2->setOrientation(glm::angleAxis(glm::radians(30.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(firstHallwayWall2);
+
+	// junction after first hallway
+	ofBoxPrimitive junctionMesh;
+	
+	junctionMesh.set(465, wallHeight, wallThickness);
+	GameObject* junctionWall1 = new GameObject(junctionMesh.getMesh(), glm::vec3(13550, wallHeight / 2 - 50, 300), 1.0f);
+	wall_objects_vec.push_back(junctionWall1);
+
+	junctionMesh.set(600, wallHeight, wallThickness);
+	GameObject* junctionWall2 = new GameObject(junctionMesh.getMesh(), glm::vec3(13625, wallHeight / 2 - 50, 600), 1.0f);
+	wall_objects_vec.push_back(junctionWall2);
+
+	// wall that blocks entrance to second part, has own variable so this isn't needed anymore
+	/*
+	junctionMesh.set(300, wallHeight, wallThickness);
+	GameObject* junctionWall3 = new GameObject(junctionMesh.getMesh(), glm::vec3(12700, wallHeight / 2 - 50, 450), 1.0f);
+	junctionWall3->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(junctionWall3);
+	*/
+
+	junctionMesh.set(300, wallHeight, wallThickness);
+	GameObject* junctionWall5 = new GameObject(junctionMesh.getMesh(), glm::vec3(12850, wallHeight / 2 - 50, 600), 1.0f);
+	wall_objects_vec.push_back(junctionWall5);
+
+	// right hallway
+	junctionMesh.set(500, wallHeight, wallThickness);
+	GameObject* junctionWall8 = new GameObject(junctionMesh.getMesh(), glm::vec3(13000, wallHeight / 2 - 50, 50), 1.0f);
+	junctionWall8->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(junctionWall8);
+
+	GameObject* junctionWall9 = new GameObject(junctionMesh.getMesh(), glm::vec3(13320, wallHeight / 2 - 50, 50), 1.0f);
+	junctionWall9->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(junctionWall9);
+
+	junctionMesh.set(320, wallHeight, wallThickness);
+	GameObject* junctionWall10 = new GameObject(junctionMesh.getMesh(), glm::vec3(13160, wallHeight / 2 - 50, -200), 1.0f);
+	//junctionWall10->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(junctionWall10);
+
+	// left hallway
+	junctionMesh.set(900, wallHeight, wallThickness);
+	GameObject* junctionWall11 = new GameObject(junctionMesh.getMesh(), glm::vec3(13000, wallHeight / 2 - 50, 1050), 1.0f);
+	junctionWall11->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(junctionWall11);
+
+	junctionMesh.set(600, wallHeight, wallThickness);
+	GameObject* junctionWall12 = new GameObject(junctionMesh.getMesh(), glm::vec3(13320, wallHeight / 2 - 50, 900), 1.0f);
+	junctionWall12->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(junctionWall12);
+	
+	// area after left hallway
+	junctionMesh.set(620, wallHeight, wallThickness);
+	GameObject* junctionWall13 = new GameObject(junctionMesh.getMesh(), glm::vec3(13310, wallHeight / 2 - 50, 1500), 1.0f);
+	//junctionWall13->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(junctionWall13);
+
+	junctionMesh.set(900, wallHeight, wallThickness);
+	GameObject* junctionWall14 = new GameObject(junctionMesh.getMesh(), glm::vec3(13620, wallHeight / 2 - 50, 1050), 1.0f);
+	junctionWall14->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(junctionWall14);
+}
+
+// after first blocking wall
+void ofApp::createWallsSection6() {
+	// wall dimensions
+	float wallThickness = 20.0f;
+	float wallHeight = 300.0f;
+
+	// first hallway past first blocking wall
+	ofBoxPrimitive firstHallwayMesh;
+	firstHallwayMesh.set(900, wallHeight, wallThickness);
+	GameObject* firstHallwayWall1 = new GameObject(firstHallwayMesh.getMesh(), glm::vec3(12550, wallHeight / 2 - 50, 300), 1.0f);
+	wall_objects_vec.push_back(firstHallwayWall1);
+
+	firstHallwayMesh.set(300, wallHeight, wallThickness);
+	GameObject* firstHallwayWall2 = new GameObject(firstHallwayMesh.getMesh(), glm::vec3(12250, wallHeight / 2 - 50, 600), 1.0f);
+	wall_objects_vec.push_back(firstHallwayWall2);
+
+	// first left room in hallway
+	GameObject* firstHallwayWall3 = new GameObject(firstHallwayMesh.getMesh(), glm::vec3(12400, wallHeight / 2 - 50, 750), 1.0f);
+	firstHallwayWall3->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(firstHallwayWall3);
+
+	GameObject* firstHallwayWall4 = new GameObject(firstHallwayMesh.getMesh(), glm::vec3(12700, wallHeight / 2 - 50, 750), 1.0f);
+	firstHallwayWall4->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(firstHallwayWall4);
+
+	ofBoxPrimitive diagonalHallwayMesh;
+	diagonalHallwayMesh.set(600, wallHeight, wallThickness);
+	GameObject* diagonalHallwayWall1 = new GameObject(diagonalHallwayMesh.getMesh(), glm::vec3(11900, wallHeight / 2 - 50, 90), 1.0f);
+	diagonalHallwayWall1->setOrientation(glm::angleAxis(glm::radians(135.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(diagonalHallwayWall1);
+
+	diagonalHallwayMesh.set(800, wallHeight, wallThickness);
+	GameObject* diagonalHallwayWall2 = new GameObject(diagonalHallwayMesh.getMesh(), glm::vec3(11820, wallHeight / 2 - 50, 320), 1.0f);
+	diagonalHallwayWall2->setOrientation(glm::angleAxis(glm::radians(135.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(diagonalHallwayWall2);
+
+	// junction
+	ofBoxPrimitive junctionMesh;
+	junctionMesh.set(830, wallHeight, wallThickness);
+	GameObject* junctionWall1 = new GameObject(junctionMesh.getMesh(), glm::vec3(11425, wallHeight / 2 - 50, -630), 1.0f);
+	junctionWall1->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(junctionWall1);
+
+	junctionMesh.set(800, wallHeight, wallThickness);
+	GameObject* junctionWall2 = new GameObject(junctionMesh.getMesh(), glm::vec3(11025, wallHeight / 2 - 50, -215), 1.0f);
+	wall_objects_vec.push_back(junctionWall2);
+
+	junctionMesh.set(925, wallHeight, wallThickness);
+	GameObject* junctionWall3 = new GameObject(junctionMesh.getMesh(), glm::vec3(11690, wallHeight / 2 - 50, -580), 1.0f);
+	junctionWall3->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(junctionWall3);
+
+	junctionMesh.set(1000, wallHeight, wallThickness);
+	GameObject* junctionWall4 = new GameObject(junctionMesh.getMesh(), glm::vec3(11050, wallHeight / 2 - 50, 45), 1.0f);
+	wall_objects_vec.push_back(junctionWall4);
+
+	// left hallway
+	junctionMesh.set(300, wallHeight, wallThickness);
+	GameObject* leftHallwayBackWall = new GameObject(junctionMesh.getMesh(), glm::vec3(10675, wallHeight / 2 - 50, -65), 1.0f);
+	leftHallwayBackWall->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(leftHallwayBackWall);
+}
+
+// final area
+void ofApp::createWallsSection7() {
+	// wall dimensions
+	float wallThickness = 20.0f;
+	float wallHeight = 300.0f;
+
+	// 12090 -1050 800, 11025 -1050 800
+	ofBoxPrimitive finalAreaWallMesh;
+	finalAreaWallMesh.set(800, wallHeight, wallThickness);
+	GameObject* finalAreaWall1 = new GameObject(finalAreaWallMesh.getMesh(), glm::vec3(12090, wallHeight / 2 - 50, -1050), 1.0f);
+	wall_objects_vec.push_back(finalAreaWall1);
+
+	GameObject* finalAreaWall2 = new GameObject(finalAreaWallMesh.getMesh(), glm::vec3(11025, wallHeight / 2 - 50, -1050), 1.0f);
+	wall_objects_vec.push_back(finalAreaWall2);
+
+	finalAreaWallMesh.set(1050, wallHeight, wallThickness);
+	GameObject* finalAreaWall3 = new GameObject(finalAreaWallMesh.getMesh(), glm::vec3(10640, wallHeight / 2 - 50, -1580), 1.0f);
+	finalAreaWall3->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(finalAreaWall3);
+
+	GameObject* finalAreaWall4 = new GameObject(finalAreaWallMesh.getMesh(), glm::vec3(12480, wallHeight / 2 - 50, -1580), 1.0f);
+	finalAreaWall4->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(finalAreaWall4);
+
+	// 11500 -2100
+	finalAreaWallMesh.set(2500, wallHeight, wallThickness);
+	GameObject* finalAreaWall5 = new GameObject(finalAreaWallMesh.getMesh(), glm::vec3(11500, wallHeight / 2 - 50, -2100), 1.0f);
+	wall_objects_vec.push_back(finalAreaWall5);
 }
