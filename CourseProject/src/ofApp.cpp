@@ -662,28 +662,6 @@ void ofApp::draw() {
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key) {
-
-	// interact key
-	if (key == 'f' || key == 'F') {
-		if (show_interact_tip) {
-
-			// check which interactable needs to get infected and removed
-			for (int i = 0; i < interactables_vec.size(); ++i) {
-				if (glm::distance(interactables_vec[i]->getPosition(), player->getPosition()) < INTERACT_RANGE) {
-					GameObject* interactable = interactables_vec[i];
-					interactables_vec.erase(interactables_vec.begin() + i);
-					delete interactable;
-
-					if (bloodstream) {
-						veins_infected_count++;
-						updateBulletHellWall();
-					}
-					else if (boneMarrow) {
-						marrow_infected_count++;
-						updateBoneMarrowBlockingWalls();
-					}
-
-					infect_sound.play();
           
 	// --------------------- gameplay related keybinds --------------------------
 	if (game_state == 1) {
