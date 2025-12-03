@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef RED_BLOOD_CELL_PARTICLE_SYSTEM_H
-#define RED_BLOOD_CELL_PARTICLE_SYSTEM_H
+#ifndef PARTICLE_SYSTEM_H
+#define PARTICLE_SYSTEM_H
 
 #include <ofMain.h>
 #include <glm/glm.hpp>
@@ -15,7 +15,11 @@ public:
     ParticleSystem(MyCustomCamera& camera, int num_particles);
     void loadShader(string vert, string frag, string geom);
     void loadImage(string filepath);
+
+    // different setups
     void setupRbcParticles();
+    void setupInfectionParticles(void);
+
     void update();
     void draw();
     void setPosition(const glm::vec3& position);
@@ -24,7 +28,7 @@ public:
 
 private:
 
-    glm::vec3 sphere_sample();
+    glm::vec3 sphere_sample(float rad);
     glm::vec3 ring_sample();
 
     ofVbo vbo; // vertex buffer object to store all the particle data

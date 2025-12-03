@@ -63,8 +63,8 @@ protected:
 	Timer speed_boost_cd_timer;
 	Timer speed_boost_active_timer;
 	bool speed_boost_on;
-	const float SPEED_BOOST_DURATION = 5.0f;
-	const float SPEED_BOOST_CD = 15.0f;
+	const float SPEED_BOOST_DURATION = 2.0f;
+	const float SPEED_BOOST_CD = 5.0f;
 	const float SPEED_BOOST_MULT = 2.0f;
 
 	// other

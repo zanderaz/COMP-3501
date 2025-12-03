@@ -1,4 +1,4 @@
-#include "redBloodCellParticleSystem.h"
+#include "ParticleSystem.h"
 
 // constructor
 ParticleSystem::ParticleSystem(MyCustomCamera& camera, int num_particles)
@@ -41,11 +41,9 @@ void ParticleSystem::setupRbcParticles() {
     ids.resize(particleCount);
 
     for (int i = 0; i < particleCount; i++) {
-        positions[i] = sphere_sample();
+        positions[i] = sphere_sample(1.0f);
 
-        normals[i] = glm::normalize(positions[i]); // normalize puts them on the surface of a sphere
-        //        normals[i] = positions[i]; // plain position provides variable velocity
-        //        normals[i] = positions[i]*2*length(positions[i]); // even less uniform, ones on the outside travelling even faster
+        normals[i] = glm::normalize(positions[i]);
         ids[i] = i;
         phases[i] = ofRandom(0, 0.25);
     }
@@ -56,6 +54,26 @@ void ParticleSystem::setupRbcParticles() {
     vbo.setAttributeData(3, ids.data(), 1, particleCount, GL_STATIC_DRAW);
 } 
 
+void ParticleSystem::setupInfectionParticles() {
+    positions.resize(particleCount);
+    normals.resize(particleCount);
+    phases.resize(particleCount);
+    ids.resize(particleCount);
+
+    for (int i = 0; i < particleCount; i++) {
+        positions[i] = sphere_sample(4.0f);
+
+        normals[i] = positions[i] * 5 * length(positions[i]);
+        ids[i] = i;
+        phases[i] = ofRandom(0, 1.0);
+    }
+
+    vbo.setVertexData(positions.data(), particleCount, GL_STATIC_DRAW);
+    vbo.setAttributeData(1, &normals[0].x, 3, particleCount, GL_STATIC_DRAW);
+    vbo.setAttributeData(2, phases.data(), 1, particleCount, GL_STATIC_DRAW);
+    vbo.setAttributeData(3, ids.data(), 1, particleCount, GL_STATIC_DRAW);
+}
+
 void ParticleSystem::update() {
     currentTime = ofGetElapsedTimef();
 }
@@ -64,7 +82,7 @@ void ParticleSystem::draw() {
     //ofDisableDepthTest();
     glDepthMask(GL_FALSE); // dont write to depth buffer (still read)
     //ofEnableBlendMode(OF_BLENDMODE_ADD);
-    //ofEnableAlphaBlending();
+    ofEnableAlphaBlending();
     particleNode.setPosition(position);
 
     ofPushMatrix();
@@ -86,9 +104,8 @@ void ParticleSystem::draw() {
     shader.end();
     ofPopMatrix();
 
+    ofDisableAlphaBlending();
     glDepthMask(GL_TRUE); // turn back on depth writing
-    //ofEnableAlphaBlending();
-    //ofDisableAlphaBlending();
     //redBloodCell.draw(0, 0);
     //ofEnableDepthTest();
 }
@@ -105,15 +122,15 @@ void ParticleSystem::setTime(float time) {
     currentTime = time;
 }
 
-glm::vec3 ParticleSystem::sphere_sample() {
+glm::vec3 ParticleSystem::sphere_sample(float rad) {
     glm::vec3 p;
     do {
         p = glm::vec3(
-            ofRandom(-1.0f, 1.0f),
-            ofRandom(-1.0f, 1.0f),
-            ofRandom(-1.0f, 1.0f)
+            ofRandom(-rad, rad),
+            ofRandom(-rad, rad),
+            ofRandom(-rad, rad)
         );
-    } while (glm::length2(p) > 1.0f);
+    } while (glm::length2(p) > rad);
     return p;
 }
 
