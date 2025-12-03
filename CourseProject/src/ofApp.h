@@ -11,7 +11,7 @@
 #include "PowerUpObject.h"
 #include "timer.h"
 #include "redBloodCell.h"
-#include "redBloodCellParticleSystem.h"
+#include "ParticleSystem.h"
 #include "screenSpaceEffect.h"
 #include "TextBox.h"
 #include "EnemySpawner.h"
@@ -41,10 +41,12 @@ public:
 	void gotMessage(ofMessage msg);
 
 	// helper functions
+	void setupSFX(void);
 	static GLFWwindow* getGLFW(void);
 	void setRawMouseCapture(bool on);
 	void recenterCursorToWindowCenter(void);
 	void handleCheckpointCollision(CheckpointGameObject* checkpoint);
+	void spawnInfectedPS(const glm::vec3& position);
 
 	// collidable object creation
 	void createWalls();
@@ -76,6 +78,7 @@ private:
 	vector<PowerUpObject*> power_up_vec;
 	vector<GameObject*> wall_objects_vec;
 	vector<GameObject*> interactables_vec;
+	vector<ParticleSystem*> infection_ps_vec;
 
 	// mouse-look and camera related
 	MyCustomCamera cam;
@@ -88,15 +91,19 @@ private:
 	// track time
 	float time_elapsed;
 
-	// sound
+	// music
 	ofSoundPlayer menu_music;
 	ofSoundPlayer gameplay_music;
+	// sfx
 	ofSoundPlayer infect_sound;
 	ofSoundPlayer speed_boost_sound;
+	ofSoundPlayer room_event_start;
+	ofSoundPlayer room_event_end;
+	ofSoundPlayer checkpoint_teleport;
 
 	// re-used meshes
 	ofSpherePrimitive power_up_mesh;
-	ofSpherePrimitive player_mesh;
+	ofSpherePrimitive empty_mesh;
 	ofSpherePrimitive bulletHellEnemyMesh;
 
 	// shader
@@ -108,29 +115,35 @@ private:
 	ofTrueTypeFont menu_title_font;
 	ofTrueTypeFont menu_caption_font;
 	ofTrueTypeFont game_over_font;
-	ofImage menu_background;
+
 	ofRectangle start_button_rect;
 	ofRectangle quit_button_rect;
 
+	ofImage menu_texture;
+	ofShader menu_shader;
 
 	// game state indicators
 	unsigned short int game_state; // 0 = main menu, 1 = gameplay, 2 = game over, 3 = game won 
-	bool bloodstream, boneMarrow;
 	bool is_muted;
 	unsigned short int veins_infected_count, marrow_infected_count;
 
 	// textures
 	ofImage texture, skyTexture, bloodstreamWallTexture, boneMarrowWallTexture;
 
-	// test (objects, orbit for light source, boolean to toggle texture)
-	ofIcoSpherePrimitive sphere, lightSphere, skySphere;
-	float orbitSpeed, orbitRadius, orbitAngle;
+	// priority renders: light source, skybox, use texture flag
+	glm::vec3 light_pos;
+	ofIcoSpherePrimitive lightSphere, skySphere;
 	bool bUseTexture = true;
-	RedBloodCellParticleSystem* rbc;
-	RedBloodCell* redBloodCell;
-	ScreenSpaceEffect screenSpaceEffect;
 
-	// in game text
+	// particle systems
+	ParticleSystem* rbc;
+	RedBloodCell* redBloodCell;
+
+	// SSE related
+	ScreenSpaceEffect screenSpaceEffect;
+	bool bloodstream, boneMarrow;
+
+	// in game text and icons
 	ofTrueTypeFont dialog_font;
 	TextBox textBox;
 	bool showTextBox;

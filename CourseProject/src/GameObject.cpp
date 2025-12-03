@@ -24,6 +24,7 @@ void GameObject::draw(ofShader* lightingShader) {
 	ofPopMatrix();
 }
 
+// helper, gets world matrix
 glm::mat4 GameObject::getWorldMatrix() {
 	glm::mat4 mat(1.0f);
 
@@ -39,6 +40,7 @@ glm::mat4 GameObject::getWorldMatrix() {
 	return mat;
 }
 
+// helper, computes local bounds for each object for collision purposes
 void GameObject::computeLocalBounds() {
 	const std::vector<glm::vec3>& verts = mesh.getVertices();
 	if (verts.empty()) {

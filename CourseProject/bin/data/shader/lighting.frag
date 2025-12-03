@@ -16,9 +16,7 @@ uniform bool useTexture;
 
 out vec4 fragColor;
 
-void main()
-{
-
+void main() {
 
     // Ambient
     float ambientStrength = 0.1;

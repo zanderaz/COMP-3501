@@ -45,21 +45,7 @@ void ofApp::setup() {
 
 	// init sounds
 	try {
-		menu_music.load("sfx/menu_music.mp3");
-		menu_music.setLoop(true);
-		menu_music.setVolume(MUSIC_VOL);
-
-		gameplay_music.load("sfx/bg_music.mp3");
-		gameplay_music.setLoop(true);
-		gameplay_music.setVolume(MUSIC_VOL);
-
-		infect_sound.load("sfx/vein_infect.wav");
-		infect_sound.setLoop(false);
-		infect_sound.setVolume(SFX_VOL);
-
-		speed_boost_sound.load("sfx/speed_boost.wav");
-		infect_sound.setLoop(false);
-		infect_sound.setVolume(SFX_VOL);
+		setupSFX();
 	}
 	catch (...) {
 		ofLogError() << "Sound files could not be loaded. Ensure bin/data/sfx exists and is populated.";
@@ -71,24 +57,23 @@ void ofApp::setup() {
 	cam.setFov(90.0f);
 
 	// test object related
-	sphere.setPosition(-150, 0, 10);
 	skySphere.setRadius(1000);
 	skySphere.setResolution(6);
-	orbitRadius = 400;
-	orbitSpeed = 0.3;
-	orbitAngle = 0;
 
 	// setup meshes
 	power_up_mesh.setRadius(20);
 	power_up_mesh.setResolution(10);
-
-	player_mesh.setRadius(0);
-	player_mesh.setResolution(0);
+	empty_mesh.setRadius(0);
+	empty_mesh.setResolution(0);
 
 	// create the player
-	player = new PlayerGameObject(player_mesh.getMesh(), glm::vec3(0), 1.0f, cam);
+	player = new PlayerGameObject(empty_mesh.getMesh(), glm::vec3(0), 1.0f, cam);
 
-	// example objs
+	// init light position to above the player
+	light_pos = player->getPosition(); 
+	light_pos.y = 420.0f;
+
+	// example objs (FOR TESTING PURPOSES, NOT USEFUL AT ALL RN)
 	power_up_vec.push_back(new PowerUpObject(power_up_mesh.getMesh(), glm::vec3(200, 0, 0), 1.f));
 	power_up_vec.push_back(new PowerUpObject(power_up_mesh.getMesh(), glm::vec3(-200, 0, 0), 1.f));
 	power_up_vec.push_back(new PowerUpObject(power_up_mesh.getMesh(), glm::vec3(0, 200, 0), 1.f));
@@ -96,18 +81,16 @@ void ofApp::setup() {
 	power_up_vec.push_back(new PowerUpObject(power_up_mesh.getMesh(), glm::vec3(0, 0, 200), 1.f));
 	power_up_vec.push_back(new PowerUpObject(power_up_mesh.getMesh(), glm::vec3(0, 0, -200), 1.f));
 
-	// checkpoint_vec.push_back(new CheckpointGameObject(power_up_mesh.getMesh(), glm::vec3(-300, 100, 200), 1.f));
-
 	// setup red blood cell particle system
-	rbc = new RedBloodCellParticleSystem(player->getCamera(), 25);
+	rbc = new ParticleSystem(player->getCamera(), 25);
 	rbc->loadShader("shader/rbcparticle.vert", "shader/rbcparticle.frag", "shader/rbcparticle.geom");
 	rbc->loadImage("images/redbloodcell.jpg");
+	rbc->setupRbcParticles();
 	ofMesh mesh = ofMesh::sphere(25, 100);
 	redBloodCell = new RedBloodCell(rbc, mesh, glm::vec3(20, 200, -20), 1.0f);
-	screenSpaceEffect.setup(ofGetWidth(), ofGetHeight());
 
-	// test
-	// opposition_vec.push_back(new EnemyGameObject(power_up_mesh.getMesh(), glm::vec3(250, 0, 0), 1.f));
+	// setup SSE handler
+	screenSpaceEffect.setup(ofGetWidth(), ofGetHeight());
 
 	// setup all text elements
 	try {
@@ -115,11 +98,17 @@ void ofApp::setup() {
 		menu_title_font.load("fonts/PapyrusBold.ttf", 96);
 		menu_caption_font.load("fonts/ArialMedium.ttf", 14);
 		game_over_font.load("fonts/ArialMedium.ttf", 72);
-		menu_background.load("images/menu_bg.jpg");
+		menu_texture.load("images/menu_bg.png");
 		dialog_font.load("fonts/ArialMedium.ttf", 24);
 	}
 	catch (...) {
 		ofLogError() << "Text elements could not be loaded. Please check bin/data/fonts and bin/data/images.";
+	}
+	
+	// setup the main menu's dynamic texture
+	menu_shader.load("shader/menu_bg");
+	if (!menu_shader.isLoaded()) {
+		ofLogError() << "Menu Shader failed to load!";
 	}
 
 	// setup the info text box
@@ -131,12 +120,6 @@ void ofApp::setup() {
 	textBox.setPosition((ofGetWidth() / 2.0f) - 250, ofGetHeight() - 200);
 	textBox.setBorderWidth(3.0f);
 	showTextBox = false;
-
-	// bullet hell spawn stuff
-	bulletHellEnemyMesh.set(30, 100);
-	enemySpawner.setup(&bulletHellEnemyMesh.getMesh());
-	bloodBulletHellActive = false;
-	isBulletHellComplete = false;
 
 	// setup the interactable objects
 	// bloodstream
@@ -207,6 +190,13 @@ void ofApp::setup() {
 	interactables_vec.push_back(interact_obj12);
 
 	// to block bullet hell (until infected all necessary objects)
+	// bullet hell spawn stuff
+	bulletHellEnemyMesh.set(30, 100);
+	enemySpawner.setup(&bulletHellEnemyMesh.getMesh());
+	bloodBulletHellActive = false;
+	isBulletHellComplete = false;
+
+	// setup the wall (door) to the bullet hell room
 	ofBoxPrimitive bulletHellWallMesh;
 	bulletHellWallMesh.set(300, 300, 20);
 	bulletHellWall = new GameObject(bulletHellWallMesh.getMesh(), glm::vec3(-2980, 300 / 2 - 50, 975), 1.0f);
@@ -269,7 +259,6 @@ void ofApp::exit(void) {
 	delete player;
 	delete lightingShader;
 	delete skyBoxShader;
-	delete rbc;
 	delete redBloodCell;
 
 	for (int i = 0; i < opposition_vec.size(); ++i) {
@@ -296,6 +285,12 @@ void ofApp::exit(void) {
 		delete obj;
 	}
 	interactables_vec.clear();
+
+	for (auto holder : infection_ps_vec) {
+		delete holder;
+	}
+	infection_ps_vec.clear();
+
 
 	enemySpawner.clearEnemies();
 
@@ -324,14 +319,13 @@ void ofApp::update() {
 	// -------------------- GAMEPLAY GAME STATE ---------------------------
 	else if (game_state == 1) {
 
+		// check for game over beforehand
 		if (player->getHealth() <= 0) {
 			gameOverTimer.Start(5.0f);
 			game_state = 2;
 		}
 
 		else {
-			// test (light source)
-			orbitAngle += orbitSpeed * ofGetLastFrameTime();
 
 			/*** PLAYER HANDLING ***/
 
@@ -413,15 +407,21 @@ void ofApp::update() {
 			if (player_in_range) show_interact_tip = true;
 			else show_interact_tip = false;
 
-			/*** OTHER (testing most likely) ***/
+			/*** PARTICLE SYSTEM HANDLING ***/
 
-			// rbc movement testing
-			/*
-			glm::vec3 dir(1, 0, 0);
-			dir += 10 * delta_time;
-			redBloodCell->setPosition(redBloodCell->getPosition() + dir);
-			*/
-			redBloodCell->update(delta_time);
+			redBloodCell->update(delta_time); // will update particle system stored inside
+			for (ParticleSystem* psh : infection_ps_vec) {
+				psh->update();
+			}
+
+			/*** LIGHT SOURCE HANDLING ***/
+
+			glm::vec3 targetPos = player->getPosition();
+			targetPos.y = 420.0f; // ensure light is above player
+			float lerpSpeed = 0.5f * delta_time;
+			light_pos = glm::mix(light_pos, targetPos, lerpSpeed);
+			lightSphere.setPosition(light_pos);
+
 		}
 	}
 
@@ -450,10 +450,13 @@ void ofApp::draw() {
 
 		ofSetColor(255, 255, 255);
 		
-		// background image -> change to dynamic texture for bonus points later (if time permits)
-		if (menu_background.isAllocated()) {
-			menu_background.draw(0, 0, ofGetWidth(), ofGetHeight());
+		// background image for main menu, texture is changed dynamically using the menu shader
+		menu_shader.begin();
+		menu_shader.setUniform1f("u_time", ofGetElapsedTimef());
+		if (menu_texture.isAllocated()) {
+			menu_texture.draw(0, 0, ofGetWidth(), ofGetHeight());
 		}
+		menu_shader.end();
 
 		// setup button rectangle positions
 		float center_x = ofGetWidth() / 2.0f;
@@ -465,12 +468,6 @@ void ofApp::draw() {
 		float title_y = center_y - 100; // top
 		menu_title_font.drawString(TITLE_TEXT, title_x, title_y);
 
-		// caption specific
-		ofRectangle caption_bounds = menu_caption_font.getStringBoundingBox(CAPTION_TEXT, 0, 0);
-		float caption_x = center_x - (caption_bounds.width / 2.0f);
-		float caption_y = center_y - 20; // middle-top
-		menu_caption_font.drawString(CAPTION_TEXT, caption_x, caption_y);
-
 		// start button specific
 		ofRectangle start_bounds = menu_button_font.getStringBoundingBox(START_TEXT, 0, 0);
 		float start_x = center_x - (start_bounds.width / 2.0f);
@@ -480,8 +477,14 @@ void ofApp::draw() {
 		// quit button specific
 		ofRectangle quit_bounds = menu_button_font.getStringBoundingBox(QUIT_TEXT, 0, 0);
 		float quit_x = center_x - (quit_bounds.width / 2.0f);
-		float quit_y = center_y + 200; // bottom
+		float quit_y = center_y + 200; // just under start
 		quit_button_rect = menu_button_font.getStringBoundingBox(QUIT_TEXT, quit_x, quit_y);
+
+		// caption specific
+		ofRectangle caption_bounds = menu_caption_font.getStringBoundingBox(CAPTION_TEXT, 0, 0);
+		float caption_x = center_x - (caption_bounds.width / 2.0f);
+		float caption_y = ofGetHeight() - 50; // bottom
+		menu_caption_font.drawString(CAPTION_TEXT, caption_x, caption_y);
 
 		// check if mouse is hovering over start, turn yellow if so
 		if (start_button_rect.inside(ofGetMouseX(), ofGetMouseY())) {
@@ -532,10 +535,9 @@ void ofApp::draw() {
 
 		glDepthMask(GL_TRUE);
 
-		ofSetColor(ofColor::sandyBrown);
-
 		lightingShader->begin();
 
+		// setup lighting shader attributes
 		if (bUseTexture) {
 			lightingShader->setUniform1i("useTexture", 1);
 			lightingShader->setUniformTexture("tex0", texture, 0);
@@ -543,58 +545,34 @@ void ofApp::draw() {
 		else {
 			lightingShader->setUniform1i("useTexture", 0);
 		}
-
-		sphere.setPosition(-50, 300, 10);
-
-		// setup attributes
 		lightingShader->setUniformMatrix4f("viewMatrix", player->getCamera().getModelViewMatrix());
 		lightingShader->setUniformMatrix4f("modelViewProjectionMatrix", player->getCamera().getModelViewProjectionMatrix());
 		lightingShader->setUniformMatrix4f("projectionMatrix", player->getCamera().getProjectionMatrix());
-		lightingShader->setUniformMatrix4f("worldMatrix", sphere.getGlobalTransformMatrix());
 
-		lightingShader->setUniform1i("isLight", false);
-		lightingShader->setUniform3f("emissionColor", glm::vec3(0.0));
-
-		
+		lightingShader->setUniform3f("lightColor", glm::vec3(1, 1, 1));
+		lightingShader->setUniform1i("specularPower", 128);
 		if (bloodstream) {
 			lightingShader->setUniform3f("emissionColor", glm::vec3(1.0f, 0.7f, 0.7f));
 		}
 		else if (boneMarrow) {
 			lightingShader->setUniform3f("emissionColor", glm::vec3(0.8f, 0.9f, 1.0f));
 		}
-
-		// light and view position setup (might make the player have the light close to them
 		glm::mat4 view = player->getCamera().getModelViewMatrix();
-		glm::vec3 lightPos(100, 420, 100);
-
-		lightPos.x = 100 + (orbitRadius * cos(orbitAngle));
-		lightPos.z = 100 + (orbitRadius * sin(orbitAngle));
-		lightSphere.setPosition(lightPos);
-		glm::vec3 viewLight = glm::vec3(view * glm::vec4(lightPos, 1.0));
-
+		glm::vec3 viewLight = glm::vec3(view * glm::vec4(light_pos, 1.0));
+		lightingShader->setUniform3f("lightPos", viewLight);
 		glm::vec3 camPos = player->getCamera().getPosition();
 		glm::vec3 viewCam = glm::vec3(view * glm::vec4(camPos, 1.0));
-
-		lightingShader->setUniform3f("lightPos", viewLight);
 		lightingShader->setUniform3f("viewPos", viewCam);
-
-		// test objects
-
-		lightingShader->setUniform3f("lightColor", glm::vec3(1, 1, 1));
-
-		lightingShader->setUniform3f("objectColor", glm::vec3(0.6, 0.6, 0.9));
-		lightingShader->setUniform1i("specularPower", 128);
-
-		sphere.getMesh().draw();
-
-		lightingShader->setUniform1i("isLight", true);
-		lightingShader->setUniform3f("objectColor", glm::vec3(1.0, 0.9, 0.2));
-		lightingShader->setUniform3f("emissionColor", glm::vec3(1, 1, 0.4));
+		
+		// draw the light source sphere - needs additional uniforms (set in gameobject class, however this is not a gameobject)
 		lightingShader->setUniformMatrix4f("worldMatrix", lightSphere.getGlobalTransformMatrix());
+		lightingShader->setUniform3f("objectColor", glm::vec3(1.0, 0.9, 0.2));
+		lightingShader->setUniform1i("isLight", true);
+		lightingShader->setUniform3f("emissionColor", glm::vec3(1, 1, 0.4));
 		lightSphere.draw();
 
+		// start drawing game objects
 		player->draw(lightingShader);
-
 		for (int i = 0; i < opposition_vec.size(); ++i) {
 			opposition_vec[i]->draw(lightingShader);
 		}
@@ -605,12 +583,11 @@ void ofApp::draw() {
 		for (int i = 0; i < power_up_vec.size(); ++i) {
 			power_up_vec[i]->draw(lightingShader);
 		}
-
 		for (int i = 0; i < checkpoint_vec.size(); ++i) {
 			checkpoint_vec[i]->draw(lightingShader);
 		}
 
-		// interactable drawing, no texture right now
+		// interactable drawing, no texture
 		lightingShader->setUniform1i("useTexture", 0);
 		for (GameObject* interact_obj : interactables_vec) {
 			interact_obj->draw(lightingShader);
@@ -628,8 +605,11 @@ void ofApp::draw() {
 			wall->draw(lightingShader);
 		}
 
-		// rbc
+		// draw particle system related objects
 		redBloodCell->draw(lightingShader);
+		for (ParticleSystem* ps : infection_ps_vec) {
+			ps->draw();
+		}
 
 		//enemySpawner.draw(lightingShader);
 
@@ -683,14 +663,6 @@ void ofApp::draw() {
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key) {
 
-	// player speed boost
-	if (key == 'e' || key == 'E') {
-		if (player->isSpeedBoostReady()) {
-			player->activateSpeedBoost();
-			speed_boost_sound.play();
-		}
-	}
-
 	// interact key
 	if (key == 'f' || key == 'F') {
 		if (show_interact_tip) {
@@ -712,12 +684,48 @@ void ofApp::keyPressed(int key) {
 					}
 
 					infect_sound.play();
+          
+	// --------------------- gameplay related keybinds --------------------------
+	if (game_state == 1) {
 
-					break;
+		// player speed boost
+		if (key == 'e' || key == 'E') {
+			if (player->isSpeedBoostReady()) {
+				player->activateSpeedBoost();
+				speed_boost_sound.play();
+			}
+		}
+
+		// interact key
+		if (key == 'f' || key == 'F') {
+			if (show_interact_tip) {
+
+				// check which interactable needs to get infected and removed
+				for (int i = 0; i < interactables_vec.size(); ++i) {
+					if (glm::distance(interactables_vec[i]->getPosition(), player->getPosition()) < INTERACT_RANGE) {
+						GameObject* interactable = interactables_vec[i]; // found vein to infect
+						
+            if (bloodstream) {
+						  veins_infected_count++;
+						  updateBulletHellWall();
+					  }
+					  else if (boneMarrow) {
+						  marrow_infected_count++;
+						  updateBoneMarrowBlockingWalls();
+					  }
+						infect_sound.play();
+						spawnInfectedPS(interactable->getPosition());
+
+						interactables_vec.erase(interactables_vec.begin() + i);
+						delete interactable;
+						break;
+					}
 				}
 			}
 		}
 	}
+
+	// --------------------- universal keybinds --------------------------
 
 	// mute the music (maybe do sfx too but at that point just set vol mixer to 0)
 	if (key == 'm' || key == 'M') {
@@ -880,6 +888,40 @@ void ofApp::dragEvent(ofDragInfo dragInfo) {
 
 }
 
+// sound setup helper function
+void ofApp::setupSFX(void) {
+
+	// music
+	menu_music.load("sfx/menu_music.mp3");
+	menu_music.setLoop(true);
+	menu_music.setVolume(MUSIC_VOL);
+
+	gameplay_music.load("sfx/bg_music.mp3");
+	gameplay_music.setLoop(true);
+	gameplay_music.setVolume(MUSIC_VOL);
+
+	// sounds
+	infect_sound.load("sfx/vein_infect.wav");
+	infect_sound.setLoop(false);
+	infect_sound.setVolume(SFX_VOL);
+
+	speed_boost_sound.load("sfx/speed_boost.wav");
+	speed_boost_sound.setLoop(false);
+	speed_boost_sound.setVolume(SFX_VOL);
+
+	room_event_start.load("sfx/room_event_start.wav");
+	room_event_start.setLoop(false);
+	room_event_start.setVolume(SFX_VOL);
+
+	room_event_end.load("sfx/room_event_end.wav");
+	room_event_end.setLoop(false);
+	room_event_end.setVolume(SFX_VOL);
+
+	checkpoint_teleport.load("sfx/teleport.wav");
+	checkpoint_teleport.setLoop(false);
+	checkpoint_teleport.setVolume(SFX_VOL);
+
+}
 
 // Get GLFW window helper method
 GLFWwindow* ofApp::getGLFW() {
@@ -924,25 +966,30 @@ void ofApp::recenterCursorToWindowCenter() {
 // Helper method, handles what should happen when the player hits a checkpoint
 void ofApp::handleCheckpointCollision(CheckpointGameObject* checkpoint) {
 
-	player->setPosition(checkpoint->getTeleportPosition());
 	// in bloodstream, going to bone marrow
 	if (bloodstream && isBulletHellComplete) {
+
+		player->setPosition(checkpoint->getTeleportPosition());
 		bloodstream = false;
 		boneMarrow = true;
-
-		// Change skybox texture
 		skyTexture.load("images/DOG.png");
-
-		// Teleport player to new area
-
-		/*
-		orbitRadius = 200;
-		orbitSpeed = 0.5f;
-		*/
+		checkpoint_teleport.play();
 
 		ofLog() << "Teleported to Bone Marrow environment";
 
 	}
+}
+
+// helper for spawning in infected particles on an infection interactable
+void ofApp::spawnInfectedPS(const glm::vec3& position) {
+
+	// setup infected particle system and place into storage
+	ParticleSystem* infected_ps = new ParticleSystem(player->getCamera(), 15);
+	infected_ps->loadShader("shader/biohazardparticle.vert", "shader/biohazardparticle.frag", "shader/biohazardparticle.geom");
+	infected_ps->loadImage("images/biohazard.png");
+	infected_ps->setupInfectionParticles();
+	infected_ps->setPosition(position);
+	infection_ps_vec.push_back(infected_ps);
 }
 
 // create walls for the play area, as well as any other collidable objects 
@@ -1311,6 +1358,7 @@ void ofApp::startBloodBulletHell(float duration) {
 	bloodBulletHellActive = true;
 	bloodBulletHellTimer.Start(duration);
 	enemySpawner.startSpawning(0.25f);
+	room_event_start.play();
 	//ofLog() << "Bullet Hell Start";
 }
 
@@ -1345,6 +1393,8 @@ void ofApp::updateBulletHellWall() {
 // handle when the player completes the bullet hell
 void ofApp::bulletHellComplete() {
 	isBulletHellComplete = true;
+	room_event_end.play();
+
 	// display some text here
 	bulletHellCheckpoint->setVisible(true);
 	bulletHellCheckpoint->setCollidable(true);

@@ -39,9 +39,8 @@ void main() {
     animatedPos += zeroposition + traj * speed * 0.75;
     animatedPos += 1.2*n * (ext * ext) * speed * 5;
 
-    // no gravity for this
-    //animatedPos.y += speed*g*ext*ext; // rising with buoyancy; used ballistic trajectory of dist = 1/2 a t ^2, even though it might not fully make sense
-    //animatedPos.y += speed*4*g*ext; // start with upwards velocity
+    animatedPos.y += speed*g*ext*ext; // rising with buoyancy; used ballistic trajectory of dist = 1/2 a t ^2, even though it might not fully make sense
+    animatedPos.y += speed*4*g*ext; // start with upwards velocity
 
 
     vec4 a_final = MVP*vec4(animatedPos,1.0); // transformed animated position
