@@ -71,7 +71,7 @@ void ofApp::setup() {
 
 	// init light position to above the player
 	light_pos = player->getPosition(); 
-	light_pos.y = 420.0f;
+	light_pos.y = LIGHT_HEIGHT;
 
 	// example objs (FOR TESTING PURPOSES, NOT USEFUL AT ALL RN)
 	power_up_vec.push_back(new PowerUpObject(power_up_mesh.getMesh(), glm::vec3(200, 0, 0), 1.f));
@@ -88,6 +88,14 @@ void ofApp::setup() {
 	rbc->setupRbcParticles();
 	ofMesh mesh = ofMesh::sphere(25, 100);
 	redBloodCell = new RedBloodCell(rbc, mesh, glm::vec3(20, 200, -20), 1.0f);
+
+	// TEST CODE FOR SPAWN PORTAL ONLY, NUKE LATER
+	ParticleSystem* sp = new ParticleSystem(player->getCamera(), 250);
+	sp->loadShader("shader/portal_particle.vert", "shader/portal_particle.frag", "shader/portal_particle.geom");
+	sp->loadImage("images/smoketex.png");
+	sp->setupSpawnPortalParticles();
+	sp->setPosition(glm::vec3(0, 200, -100));
+	spawn_portal_ps_vec.push_back(sp);
 
 	// setup SSE handler
 	screenSpaceEffect.setup(ofGetWidth(), ofGetHeight());
@@ -286,11 +294,15 @@ void ofApp::exit(void) {
 	}
 	interactables_vec.clear();
 
-	for (auto holder : infection_ps_vec) {
-		delete holder;
+	for (ParticleSystem* ps : infection_ps_vec) {
+		delete ps;
 	}
 	infection_ps_vec.clear();
 
+	for (ParticleSystem* ps : spawn_portal_ps_vec) {
+		delete ps;
+	}
+	spawn_portal_ps_vec.clear();
 
 	enemySpawner.clearEnemies();
 
@@ -410,17 +422,24 @@ void ofApp::update() {
 			/*** PARTICLE SYSTEM HANDLING ***/
 
 			redBloodCell->update(delta_time); // will update particle system stored inside
-			for (ParticleSystem* psh : infection_ps_vec) {
-				psh->update();
+			for (ParticleSystem* i_ps : infection_ps_vec) {
+				i_ps->update();
+			}
+			for (ParticleSystem* sp_ps : spawn_portal_ps_vec) {
+				sp_ps->update();
 			}
 
 			/*** LIGHT SOURCE HANDLING ***/
 
 			glm::vec3 targetPos = player->getPosition();
-			targetPos.y = 420.0f; // ensure light is above player
+			targetPos.y = LIGHT_HEIGHT; // ensure light is above player
 			float lerpSpeed = 0.5f * delta_time;
 			light_pos = glm::mix(light_pos, targetPos, lerpSpeed);
 			lightSphere.setPosition(light_pos);
+
+			/*** SCREEN SPACE EFFECT HANDLING ***/
+			screenSpaceEffect.setInBloodstream(bloodstream);
+			screenSpaceEffect.setSpeedBoostActive(player->isSpeedBoostOn());
 
 		}
 	}
@@ -510,15 +529,12 @@ void ofApp::draw() {
 	// -------------------- GAMEPLAY GAME STATE ---------------------------
 	else if (game_state == 1) {
 
-		// everything below (until fbo is ended) will get put in the frame buffer for screen-space effects
-		screenSpaceEffect.setInBloodstream(bloodstream);
-		screenSpaceEffect.setSpeedBoostActive(player->isSpeedBoostOn());
-
 		screenSpaceEffect.begin();
 		ofEnableDepthTest();
 		player->getCamera().begin();
 
 		// Draw skybox first
+		glDepthMask(GL_FALSE);
 		skyBoxShader->begin();
 
 		skyBoxShader->setUniformTexture("skyTexture", skyTexture, 0);
@@ -532,7 +548,6 @@ void ofApp::draw() {
 		ofPopMatrix();
 
 		skyBoxShader->end();
-
 		glDepthMask(GL_TRUE);
 
 		lightingShader->begin();
@@ -564,7 +579,7 @@ void ofApp::draw() {
 		glm::vec3 viewCam = glm::vec3(view * glm::vec4(camPos, 1.0));
 		lightingShader->setUniform3f("viewPos", viewCam);
 		
-		// draw the light source sphere - needs additional uniforms (set in gameobject class, however this is not a gameobject)
+		// draw the light source sphere - needs additional uniforms (normally set in gameobject class)
 		lightingShader->setUniformMatrix4f("worldMatrix", lightSphere.getGlobalTransformMatrix());
 		lightingShader->setUniform3f("objectColor", glm::vec3(1.0, 0.9, 0.2));
 		lightingShader->setUniform1i("isLight", true);
@@ -610,8 +625,9 @@ void ofApp::draw() {
 		for (ParticleSystem* ps : infection_ps_vec) {
 			ps->draw();
 		}
-
-		//enemySpawner.draw(lightingShader);
+		for (ParticleSystem* sp_ps : spawn_portal_ps_vec) {
+			sp_ps->draw();
+		}
 
 		lightingShader->end();
 
@@ -683,14 +699,15 @@ void ofApp::keyPressed(int key) {
 					if (glm::distance(interactables_vec[i]->getPosition(), player->getPosition()) < INTERACT_RANGE) {
 						GameObject* interactable = interactables_vec[i]; // found vein to infect
 						
-            if (bloodstream) {
-						  veins_infected_count++;
-						  updateBulletHellWall();
-					  }
-					  else if (boneMarrow) {
-						  marrow_infected_count++;
-						  updateBoneMarrowBlockingWalls();
-					  }
+						if (bloodstream) {
+							veins_infected_count++;
+							updateBulletHellWall();
+						}
+						else if (boneMarrow) {
+							marrow_infected_count++;
+							updateBoneMarrowBlockingWalls();
+						}
+
 						infect_sound.play();
 						spawnInfectedPS(interactable->getPosition());
 
@@ -978,6 +995,7 @@ void ofApp::createWalls() {
 	createWallsSection3();
 	createWallsSection4();
 	createVeins();
+	createLookout();
 
 	// bone marrow
 	createWallsSection5();
@@ -1059,8 +1077,8 @@ void ofApp::createWallsSection1() {
 
 	// big ceiling for now
 	ofBoxPrimitive ceilingMesh;
-	ceilingMesh.set(10000, 5, 10000);
-	GameObject* ceiling = new GameObject(ceilingMesh.getMesh(), glm::vec3(0, wallHeight - 50, 0), 1.0f);
+	ceilingMesh.set(5000, 5, 2200);
+	GameObject* ceiling = new GameObject(ceilingMesh.getMesh(), glm::vec3(-1500, wallHeight - 50, 700), 1.0f);
 	ceiling->setVisible(false);
 	wall_objects_vec.push_back(ceiling);
 
@@ -1329,6 +1347,65 @@ void ofApp::createVeins(void) {
 	glm::vec3 vein11_pos(11925, 100, 120);
 	GameObject* vein11 = new GameObject(vein_mesh11.getMesh(), vein11_pos, 1.0f);
 	wall_objects_vec.push_back(vein11);
+}
+
+// create the lookout point down the right side diagonal hallway
+void ofApp::createLookout() {
+
+	float wall_thickness = 20.0f;
+	float wall_height = 200.0f;
+	ofBoxPrimitive reused_mesh;
+
+	// inner
+	reused_mesh.set(240, wall_height + 40, wall_thickness);
+	GameObject* upward_wall1 = new GameObject(reused_mesh.getMesh(), glm::vec3(-1830, 280, -400), 1.0f);
+	wall_objects_vec.push_back(upward_wall1);
+
+	// outer wall, tallest one
+	reused_mesh.set(240, wall_height * 3 + 50, wall_thickness);
+	GameObject* upward_wall2 = new GameObject(reused_mesh.getMesh(), glm::vec3(-1870, 280, -520), 1.0f);
+	wall_objects_vec.push_back(upward_wall2);
+
+	// left wall
+	reused_mesh.set(wall_thickness, wall_height * 2, 125);
+	GameObject* upward_wall3 = new GameObject(reused_mesh.getMesh(), glm::vec3(-1967, 400, -460), 1.0f);
+	upward_wall3->setOrientation(glm::angleAxis(glm::radians(20.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(upward_wall3);
+
+	// right wall
+	reused_mesh.set(wall_thickness, wall_height * 2, 125);
+	GameObject* upward_wall4 = new GameObject(reused_mesh.getMesh(), glm::vec3(-1738, 400, -457), 1.0f);
+	upward_wall4->setOrientation(glm::angleAxis(glm::radians(20.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(upward_wall4);
+
+	// balcony floor
+	reused_mesh.set(240, wall_thickness, 150);
+	GameObject* balcony_floor = new GameObject(reused_mesh.getMesh(), glm::vec3(-1830, 395, -325), 1.0f);
+	wall_objects_vec.push_back(balcony_floor);
+
+	// balcony roof
+	reused_mesh.set(260, wall_thickness / 2, 280);
+	GameObject* balcony_roof = new GameObject(reused_mesh.getMesh(), glm::vec3(-1840, 590, -390), 1.0f);
+	wall_objects_vec.push_back(balcony_roof);
+
+	// invisible barrier, front of lookout
+	reused_mesh.set(240, wall_height, wall_thickness);
+	GameObject* invis_front = new GameObject(reused_mesh.getMesh(), glm::vec3(-1830, 500, -250), 1.0f);
+	invis_front->setVisible(false);
+	wall_objects_vec.push_back(invis_front);
+
+	// invisible barrier, left of lookout
+	reused_mesh.set(wall_thickness, wall_height, 160);
+	GameObject* invis_left = new GameObject(reused_mesh.getMesh(), glm::vec3(-1710, 500, -325), 1.0f);
+	invis_left->setVisible(false);
+	wall_objects_vec.push_back(invis_left);
+
+	// invisible barrier, right of lookout
+	reused_mesh.set(wall_thickness, wall_height, 160);
+	GameObject* invis_right = new GameObject(reused_mesh.getMesh(), glm::vec3(-1950, 500, -325), 1.0f);
+	invis_right->setVisible(false);
+	wall_objects_vec.push_back(invis_right);
+
 }
 
 // functions to start/end blood bullet hell
