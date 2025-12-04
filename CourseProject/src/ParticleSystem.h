@@ -19,6 +19,7 @@ public:
     // different setups
     void setupRbcParticles();
     void setupInfectionParticles(void);
+    void setupSpawnPortalParticles(void);
 
     void update();
     void draw();
@@ -29,7 +30,7 @@ public:
 private:
 
     glm::vec3 sphere_sample(float rad);
-    glm::vec3 ring_sample();
+    glm::vec3 auraRingSample(float rad);
 
     ofVbo vbo; // vertex buffer object to store all the particle data
     ofNode particleNode; // ofNode for using oF transform functions; will apply the node's transform to the particle system
