@@ -19,29 +19,12 @@ void ofApp::setup() {
 	boneMarrow = false;
 	show_interact_tip = false;
 	veins_infected_count = 0;
+	marrow_infected_count = 0;
 	game_state = 0; // start on main menu
-	
-	// init shaders
-	lightingShader = new ofShader();
-	skyBoxShader = new ofShader();
-	lightingShader->load("shader/lighting");
-	if (!lightingShader->isLoaded()) {
-		ofLogError() << "Lighting Shader failed to load!";
-		ofExit();
-	}
-	skyBoxShader->load("shader/skyBox");
-	if (!skyBoxShader->isLoaded()) {
-		ofLogError() << "Skybox shader Shader failed to load!";
-		ofExit();
-	}
 
-	// init textures
-	ofDisableArbTex();
-	texture.load("images/DOG.png");
-	skyTexture.load("images/blood.jpg");
-	skyTexture.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
-	bloodstreamWallTexture.load("images/bloodold.jpeg");
-	boneMarrowWallTexture.load("images/bonemarrow.jpg");
+	// helpers for all shaders and textures
+	setupShaders();
+	setupTextures();
 
 	// init sounds
 	try {
@@ -74,12 +57,14 @@ void ofApp::setup() {
 	light_pos.y = LIGHT_HEIGHT;
 
 	// example objs (FOR TESTING PURPOSES, NOT USEFUL AT ALL RN)
+	/*
 	power_up_vec.push_back(new PowerUpObject(power_up_mesh.getMesh(), glm::vec3(200, 0, 0), 1.f));
 	power_up_vec.push_back(new PowerUpObject(power_up_mesh.getMesh(), glm::vec3(-200, 0, 0), 1.f));
 	power_up_vec.push_back(new PowerUpObject(power_up_mesh.getMesh(), glm::vec3(0, 200, 0), 1.f));
 	power_up_vec.push_back(new PowerUpObject(power_up_mesh.getMesh(), glm::vec3(0, -200, 0), 1.f));
 	power_up_vec.push_back(new PowerUpObject(power_up_mesh.getMesh(), glm::vec3(0, 0, 200), 1.f));
 	power_up_vec.push_back(new PowerUpObject(power_up_mesh.getMesh(), glm::vec3(0, 0, -200), 1.f));
+	*/
 
 	// setup red blood cell particle system
 	rbc = new ParticleSystem(player->getCamera(), 25);
@@ -100,131 +85,14 @@ void ofApp::setup() {
 	// setup SSE handler
 	screenSpaceEffect.setup(ofGetWidth(), ofGetHeight());
 
-	// setup all text elements
-	try {
-		menu_button_font.load("fonts/ArialMedium.ttf", 32);
-		menu_title_font.load("fonts/PapyrusBold.ttf", 96);
-		menu_caption_font.load("fonts/ArialMedium.ttf", 14);
-		game_over_font.load("fonts/ArialMedium.ttf", 72);
-		menu_texture.load("images/menu_bg.png");
-		dialog_font.load("fonts/ArialMedium.ttf", 24);
-	}
-	catch (...) {
-		ofLogError() << "Text elements could not be loaded. Please check bin/data/fonts and bin/data/images.";
-	}
-	
-	// setup the main menu's dynamic texture
-	menu_shader.load("shader/menu_bg");
-	if (!menu_shader.isLoaded()) {
-		ofLogError() << "Menu Shader failed to load!";
-	}
+	// helper for font and text elements
+	setupTextElements();
 
-	// setup the info text box
-	textBox.setup("Welcome to Triple Sicks! Use WASD to move, mouse to look around, and right-click to toggle mouse capture.", &dialog_font, 500.0f);
-	textBox.setSize(550, 150);
-	textBox.setBackgroundColor(ofColor(0, 0, 0, 220));
-	textBox.setTextColor(ofColor(255, 255, 0));
-	textBox.setBorderColor(ofColor(255, 255, 255));
-	textBox.setPosition((ofGetWidth() / 2.0f) - 250, ofGetHeight() - 200);
-	textBox.setBorderWidth(3.0f);
-	showTextBox = false;
-
-	// setup the interactable objects
-	// bloodstream
-	glm::vec3 infect1_pos(600, 50, 130);
-	glm::vec3 infect2_pos(-830, 70, 1350);
-	glm::vec3 infect3_pos(-2250, 45, 425);
-	glm::vec3 infect4_pos(-3950, 100, 950);
-
-	// bone marrow
-	glm::vec3 infect5_pos(13295, 150, 1035);
-	glm::vec3 infect6_pos(13340, 60, 985);
-	glm::vec3 infect7_pos(13465, 100, 710);
-	glm::vec3 infect8_pos(13160, 100, -50);
-	glm::vec3 infect9_pos(10800, 100, -150);
-	glm::vec3 infect10_pos(11200, 100, 0);
-	glm::vec3 infect11_pos(12665, 100, 700);
-	glm::vec3 infect12_pos(11890, 100, 125);
-
-
-	// bloodstream interactables
-	GameObject* interact_obj1 = new GameObject(power_up_mesh.getMesh(), infect1_pos, 1.f);
-	interact_obj1->setColour(glm::vec3(1.0f, 0.9f, 0.4f));
-	interactables_vec.push_back(interact_obj1);
-
-	GameObject* interact_obj2 = new GameObject(power_up_mesh.getMesh(), infect2_pos, 1.f);
-	interact_obj2->setColour(glm::vec3(1.0f, 0.9f, 0.4f));
-	interactables_vec.push_back(interact_obj2);
-
-	GameObject* interact_obj3 = new GameObject(power_up_mesh.getMesh(), infect3_pos, 1.f);
-	interact_obj3->setColour(glm::vec3(1.0f, 0.9f, 0.4f));
-	interactables_vec.push_back(interact_obj3);
-
-	GameObject* interact_obj4 = new GameObject(power_up_mesh.getMesh(), infect4_pos, 1.f);
-	interact_obj4->setColour(glm::vec3(1.0f, 0.9f, 0.4f));
-	interactables_vec.push_back(interact_obj4);
-
-	// bone marrow interactables
-	GameObject* interact_obj5 = new GameObject(power_up_mesh.getMesh(), infect5_pos, 1.f);
-	interact_obj5->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
-	interactables_vec.push_back(interact_obj5);
-
-	GameObject* interact_obj6 = new GameObject(power_up_mesh.getMesh(), infect6_pos, 1.f);
-	interact_obj6->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
-	interactables_vec.push_back(interact_obj6);
-
-	GameObject* interact_obj7 = new GameObject(power_up_mesh.getMesh(), infect7_pos, 1.f);
-	interact_obj7->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
-	interactables_vec.push_back(interact_obj7);
-
-	GameObject* interact_obj8 = new GameObject(power_up_mesh.getMesh(), infect8_pos, 1.f);
-	interact_obj8->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
-	interactables_vec.push_back(interact_obj8);
-
-	GameObject* interact_obj9 = new GameObject(power_up_mesh.getMesh(), infect9_pos, 1.f);
-	interact_obj9->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
-	interactables_vec.push_back(interact_obj9);
-
-	GameObject* interact_obj10 = new GameObject(power_up_mesh.getMesh(), infect10_pos, 1.f);
-	interact_obj10->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
-	interactables_vec.push_back(interact_obj10);
-
-	GameObject* interact_obj11 = new GameObject(power_up_mesh.getMesh(), infect11_pos, 1.f);
-	interact_obj11->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
-	interactables_vec.push_back(interact_obj11);
-
-	GameObject* interact_obj12 = new GameObject(power_up_mesh.getMesh(), infect12_pos, 1.f);
-	interact_obj12->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
-	interactables_vec.push_back(interact_obj12);
-
-	// to block bullet hell (until infected all necessary objects)
-	// bullet hell spawn stuff
-	bulletHellEnemyMesh.set(30, 100);
-	enemySpawner.setup(&bulletHellEnemyMesh.getMesh());
-	bloodBulletHellActive = false;
-	isBulletHellComplete = false;
-
-	// setup the wall (door) to the bullet hell room
-	ofBoxPrimitive bulletHellWallMesh;
-	bulletHellWallMesh.set(300, 300, 20);
-	bulletHellWall = new GameObject(bulletHellWallMesh.getMesh(), glm::vec3(-2980, 300 / 2 - 50, 975), 1.0f);
-	bulletHellWall->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
-	wall_objects_vec.push_back(bulletHellWall);
-
-	// to block certain spots of bone marrow (until infected all necessary objects)
-	ofBoxPrimitive boneMarrowWallMesh;
-	boneMarrowWallMesh.set(300, 300, 20);
-	boneMarrowBlockingWall1 = new GameObject(boneMarrowWallMesh.getMesh(), glm::vec3(12700, 300 / 2 - 50, 450), 1.0f);
-	boneMarrowBlockingWall1->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
-	wall_objects_vec.push_back(boneMarrowBlockingWall1);
-
-	// 11670 11445
-	boneMarrowWallMesh.set(250, 300, 20);
-	boneMarrowBlockingWall2 = new GameObject(boneMarrowWallMesh.getMesh(), glm::vec3(11557.5, 300 / 2 - 50, -1055), 1.0f);
-	wall_objects_vec.push_back(boneMarrowBlockingWall2);
-
+	// helper for interactables
+	setupInteractableObjects();
 
 	// create collidable geometry, store in player so collision resolving works properly
+	setupDynamicWalls();
 	createWalls();
 	player->setWalls(&wall_objects_vec);
 	
@@ -234,9 +102,19 @@ void ofApp::setup() {
 	bulletHellCheckpoint->setCollidable(false);
 	checkpoint_vec.push_back(bulletHellCheckpoint);
 
+	// bullet hell spawn stuff
+	bulletHellEnemyMesh.set(30, 100);
+	enemySpawner.setup(&bulletHellEnemyMesh.getMesh());
+	bloodBulletHellActive = false;
+	isBulletHellComplete = false;
+
+	// bone marrow event stuff
+	boneSpikeMinigameActive = false;
+	isBoneMarrowComplete = false;
+	boneSpikeSpawner.setup(player);
+
 	// play main menu music
 	menu_music.play();
-
 }
 
 
@@ -305,6 +183,7 @@ void ofApp::exit(void) {
 	spawn_portal_ps_vec.clear();
 
 	enemySpawner.clearEnemies();
+	boneSpikeSpawner.clearSpikes();
 
 }
 
@@ -376,14 +255,32 @@ void ofApp::update() {
 			*/
 
 			// blood bullet hell stuff (all collision detection and deletion and allat is handled in the class by passing in the player)
-			if (bloodBulletHellActive) {
-				enemySpawner.update(delta_time, player);
-				// end after certain amount of time
-				if (bloodBulletHellTimer.FinishedAndStop()) {
-					endBloodBulletHell();
-					// redundant but yea
-					if (player->getHealth() > 0) {
-						bulletHellComplete();
+			if (bloodstream) {
+				if (bloodBulletHellActive) {
+					enemySpawner.update(delta_time, player);
+					// end after certain amount of time
+					if (bloodBulletHellTimer.FinishedAndStop()) {
+						endBloodBulletHell();
+						// redundant but yea
+						if (player->getHealth() > 0) {
+							bulletHellComplete();
+						}
+					}
+				}
+			}
+
+			if (boneMarrow) {
+				// Update bone spike minigame
+				if (boneSpikeMinigameActive) {
+					boneSpikeSpawner.update(delta_time, player);
+
+					// Check if minigame is complete
+					if (boneSpikeSpawner.isComplete()) {
+						boneSpikeMinigameActive = false;
+						boneSpikeSpawner.stopMinigame();
+						isBoneMarrowComplete = true;
+						// Player wins - show victory screen or teleport to next area
+						game_state = 3; // Game won state
 					}
 				}
 			}
@@ -595,6 +492,21 @@ void ofApp::draw() {
 		// keep order like this bc its kinda odd
 		enemySpawner.draw(lightingShader);
 
+		if (boneMarrow && boneSpikeMinigameActive) {
+			boneSpikeSpawner.draw(lightingShader);
+
+			/*
+			// Draw minigame timer in HUD
+			if (boneSpikeSpawner.isActive()) {
+				float timeLeft = BONE_SPIKE_MINIGAME_DURATION - boneSpikeSpawner.getMinigameTimer().getElapsed();
+				if (timeLeft < 0) timeLeft = 0;
+
+				ofSetColor(255, 255, 0);
+				ofDrawBitmapString("Spike Minigame: " + to_string((int)timeLeft) + "s", glm::vec2(30, 130));
+			}
+			*/
+		}
+
 		for (int i = 0; i < power_up_vec.size(); ++i) {
 			power_up_vec[i]->draw(lightingShader);
 		}
@@ -656,7 +568,7 @@ void ofApp::draw() {
 		ofDrawBitmapString("Z-pos: " + to_string(player->getPosition().z), glm::vec2(30, 70));
 		ofDrawBitmapString("Health: " + to_string(player->getHealth()), glm::vec2(30, 90));
 		if (bloodstream) ofDrawBitmapString("Veins Infected: " + to_string(veins_infected_count) + " / 4", glm::vec2(30, 110));
-		else if (boneMarrow) ofDrawBitmapString("Marrow Infected: " + to_string(marrow_infected_count) + " / 8", glm::vec2(30, 110));
+		else if (boneMarrow) ofDrawBitmapString("Marrow Infected: " + to_string(marrow_infected_count) + " / 9", glm::vec2(30, 110));
 	}
 
 	// -------------------- GAME OVER GAME STATE ---------------------------
@@ -706,8 +618,19 @@ void ofApp::keyPressed(int key) {
 						else if (boneMarrow) {
 							marrow_infected_count++;
 							updateBoneMarrowBlockingWalls();
-						}
+							if (marrow_infected_count == 9 && !boneSpikeMinigameActive) {
+								boneSpikeMinigameActive = true;
+								boneSpikeSpawner.startMinigame(BONE_SPIKE_MINIGAME_DURATION);
 
+								// Play sound
+								room_event_start.play();
+
+								// Display message
+								textBox.setup("Survive for the incoming spikes for 45 seconds!", &dialog_font, 500.0f);
+								textBox.setSize(500, 120);
+								textBox.showTemporarily(5.0f);
+							}
+						}
 						infect_sound.play();
 						spawnInfectedPS(interactable->getPosition());
 
@@ -757,8 +680,10 @@ void ofApp::keyPressed(int key) {
 	if (key == 'l' || key == 'L') {
 		player->setPosition(glm::vec3(15000, 0, 0));
 		boneMarrow = !boneMarrow;
-		//marrow_infected_count = 4;
-		//updateBoneMarrowBlockingWalls();
+		marrow_infected_count = 4;
+		updateBoneMarrowBlockingWalls();
+		marrow_infected_count = 8;
+		updateBoneMarrowBlockingWalls();
 	}
 }
 
@@ -918,6 +843,63 @@ void ofApp::setupSFX(void) {
 
 }
 
+void ofApp::setupShaders() {
+	// init shaders
+	lightingShader = new ofShader();
+	skyBoxShader = new ofShader();
+	lightingShader->load("shader/lighting");
+	if (!lightingShader->isLoaded()) {
+		ofLogError() << "Lighting Shader failed to load!";
+		ofExit();
+	}
+	skyBoxShader->load("shader/skyBox");
+	if (!skyBoxShader->isLoaded()) {
+		ofLogError() << "Skybox shader Shader failed to load!";
+		ofExit();
+	}
+
+	// setup the main menu's dynamic texture
+	menu_shader.load("shader/menu_bg");
+	if (!menu_shader.isLoaded()) {
+		ofLogError() << "Menu Shader failed to load!";
+	}
+}
+
+void ofApp::setupTextures() {
+	// init textures
+	ofDisableArbTex();
+	texture.load("images/DOG.png");
+	skyTexture.load("images/blood.jpg");
+	skyTexture.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
+	bloodstreamWallTexture.load("images/bloodold.jpeg");
+	boneMarrowWallTexture.load("images/bonemarrow.jpg");
+}
+
+void ofApp::setupTextElements() {
+	// setup all text elements
+	try {
+		menu_button_font.load("fonts/ArialMedium.ttf", 32);
+		menu_title_font.load("fonts/PapyrusBold.ttf", 96);
+		menu_caption_font.load("fonts/ArialMedium.ttf", 14);
+		game_over_font.load("fonts/ArialMedium.ttf", 72);
+		menu_texture.load("images/menu_bg.png");
+		dialog_font.load("fonts/ArialMedium.ttf", 24);
+	}
+	catch (...) {
+		ofLogError() << "Text elements could not be loaded. Please check bin/data/fonts and bin/data/images.";
+	}
+
+	// setup the info text box
+	textBox.setup("Welcome to Triple Sicks! Use WASD to move, mouse to look around, and right-click to toggle mouse capture.", &dialog_font, 500.0f);
+	textBox.setSize(550, 150);
+	textBox.setBackgroundColor(ofColor(0, 0, 0, 220));
+	textBox.setTextColor(ofColor(255, 255, 0));
+	textBox.setBorderColor(ofColor(255, 255, 255));
+	textBox.setPosition((ofGetWidth() / 2.0f) - 250, ofGetHeight() - 150);
+	textBox.setBorderWidth(3.0f);
+	showTextBox = false;
+}
+
 // Get GLFW window helper method
 GLFWwindow* ofApp::getGLFW() {
 	auto base = ofGetWindowPtr();
@@ -1006,6 +988,26 @@ void ofApp::createWalls() {
 	ofLog() << "Created walls: " << wall_objects_vec.size() << " objects";
 	ofLog() << "Player starts at position: " << player->getPosition();
 	*/
+}
+
+void ofApp::setupDynamicWalls() {
+	// setup the wall (door) to the bullet hell room
+	ofBoxPrimitive bulletHellWallMesh;
+	bulletHellWallMesh.set(300, 300, 20);
+	bulletHellWall = new GameObject(bulletHellWallMesh.getMesh(), glm::vec3(-2980, 300 / 2 - 50, 975), 1.0f);
+	bulletHellWall->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(bulletHellWall);
+
+	// to block certain spots of bone marrow (until infected all necessary objects)
+	ofBoxPrimitive boneMarrowWallMesh;
+	boneMarrowWallMesh.set(300, 300, 20);
+	boneMarrowBlockingWall1 = new GameObject(boneMarrowWallMesh.getMesh(), glm::vec3(12700, 300 / 2 - 50, 450), 1.0f);
+	boneMarrowBlockingWall1->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(boneMarrowBlockingWall1);
+
+	boneMarrowWallMesh.set(265, 300, 20);
+	boneMarrowBlockingWall2 = new GameObject(boneMarrowWallMesh.getMesh(), glm::vec3(11557.5, 300 / 2 - 50, -1050), 1.0f);
+	wall_objects_vec.push_back(boneMarrowBlockingWall2);
 }
 
 // first room and exit
@@ -1347,6 +1349,89 @@ void ofApp::createVeins(void) {
 	glm::vec3 vein11_pos(11925, 100, 120);
 	GameObject* vein11 = new GameObject(vein_mesh11.getMesh(), vein11_pos, 1.0f);
 	wall_objects_vec.push_back(vein11);
+
+	ofCylinderPrimitive vein_mesh12;
+	vein_mesh12.set(radius, 300.0f);
+	vein_mesh12.setResolution(18, 2);
+	glm::vec3 vein12_pos(11550, 100, -2085);
+	GameObject* vein12 = new GameObject(vein_mesh12.getMesh(), vein12_pos, 1.0f);
+	wall_objects_vec.push_back(vein12);
+}
+
+// helper function to create interactable objects on the veins and bone marrow
+void ofApp::setupInteractableObjects() {
+	// setup the interactable objects
+	// bloodstream
+	glm::vec3 infect1_pos(600, 50, 130);
+	glm::vec3 infect2_pos(-830, 70, 1350);
+	glm::vec3 infect3_pos(-2250, 45, 425);
+	glm::vec3 infect4_pos(-3950, 100, 950);
+
+	// bone marrow
+	glm::vec3 infect5_pos(13295, 150, 1035);
+	glm::vec3 infect6_pos(13340, 60, 985);
+	glm::vec3 infect7_pos(13465, 100, 710);
+	glm::vec3 infect8_pos(13160, 100, -50);
+	glm::vec3 infect9_pos(10800, 100, -150);
+	glm::vec3 infect10_pos(11200, 100, 0);
+	glm::vec3 infect11_pos(12665, 100, 700);
+	glm::vec3 infect12_pos(11890, 100, 125);
+	glm::vec3 infect13_pos(11550, 100, -2055);
+
+
+	// bloodstream interactables
+	GameObject* interact_obj1 = new GameObject(power_up_mesh.getMesh(), infect1_pos, 1.f);
+	interact_obj1->setColour(glm::vec3(1.0f, 0.9f, 0.4f));
+	interactables_vec.push_back(interact_obj1);
+
+	GameObject* interact_obj2 = new GameObject(power_up_mesh.getMesh(), infect2_pos, 1.f);
+	interact_obj2->setColour(glm::vec3(1.0f, 0.9f, 0.4f));
+	interactables_vec.push_back(interact_obj2);
+
+	GameObject* interact_obj3 = new GameObject(power_up_mesh.getMesh(), infect3_pos, 1.f);
+	interact_obj3->setColour(glm::vec3(1.0f, 0.9f, 0.4f));
+	interactables_vec.push_back(interact_obj3);
+
+	GameObject* interact_obj4 = new GameObject(power_up_mesh.getMesh(), infect4_pos, 1.f);
+	interact_obj4->setColour(glm::vec3(1.0f, 0.9f, 0.4f));
+	interactables_vec.push_back(interact_obj4);
+
+	// bone marrow interactables
+	GameObject* interact_obj5 = new GameObject(power_up_mesh.getMesh(), infect5_pos, 1.f);
+	interact_obj5->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
+	interactables_vec.push_back(interact_obj5);
+
+	GameObject* interact_obj6 = new GameObject(power_up_mesh.getMesh(), infect6_pos, 1.f);
+	interact_obj6->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
+	interactables_vec.push_back(interact_obj6);
+
+	GameObject* interact_obj7 = new GameObject(power_up_mesh.getMesh(), infect7_pos, 1.f);
+	interact_obj7->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
+	interactables_vec.push_back(interact_obj7);
+
+	GameObject* interact_obj8 = new GameObject(power_up_mesh.getMesh(), infect8_pos, 1.f);
+	interact_obj8->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
+	interactables_vec.push_back(interact_obj8);
+
+	GameObject* interact_obj9 = new GameObject(power_up_mesh.getMesh(), infect9_pos, 1.f);
+	interact_obj9->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
+	interactables_vec.push_back(interact_obj9);
+
+	GameObject* interact_obj10 = new GameObject(power_up_mesh.getMesh(), infect10_pos, 1.f);
+	interact_obj10->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
+	interactables_vec.push_back(interact_obj10);
+
+	GameObject* interact_obj11 = new GameObject(power_up_mesh.getMesh(), infect11_pos, 1.f);
+	interact_obj11->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
+	interactables_vec.push_back(interact_obj11);
+
+	GameObject* interact_obj12 = new GameObject(power_up_mesh.getMesh(), infect12_pos, 1.f);
+	interact_obj12->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
+	interactables_vec.push_back(interact_obj12);
+
+	GameObject* interact_obj13 = new GameObject(power_up_mesh.getMesh(), infect13_pos, 1.f);
+	interact_obj13->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
+	interactables_vec.push_back(interact_obj13);
 }
 
 // create the lookout point down the right side diagonal hallway
@@ -1464,6 +1549,11 @@ void ofApp::updateBoneMarrowBlockingWalls() {
 	else if (marrow_infected_count == 8) {
 		boneMarrowBlockingWall2->setCollidable(false);
 		boneMarrowBlockingWall2->setVisible(false);
+	}
+
+	else if (marrow_infected_count == 9) {
+		boneMarrowBlockingWall2->setCollidable(true);
+		boneMarrowBlockingWall2->setVisible(true);
 	}
 }
 
@@ -1641,26 +1731,24 @@ void ofApp::createWallsSection7() {
 	float wallThickness = 20.0f;
 	float wallHeight = 300.0f;
 
-	// 12090 -1050 800, 11025 -1050 800
 	ofBoxPrimitive finalAreaWallMesh;
-	finalAreaWallMesh.set(800, wallHeight, wallThickness);
-	GameObject* finalAreaWall1 = new GameObject(finalAreaWallMesh.getMesh(), glm::vec3(12090, wallHeight / 2 - 50, -1050), 1.0f);
+	finalAreaWallMesh.set(600, wallHeight, wallThickness);
+	GameObject* finalAreaWall1 = new GameObject(finalAreaWallMesh.getMesh(), glm::vec3(11990, wallHeight / 2 - 50, -1050), 1.0f);
 	wall_objects_vec.push_back(finalAreaWall1);
 
-	GameObject* finalAreaWall2 = new GameObject(finalAreaWallMesh.getMesh(), glm::vec3(11025, wallHeight / 2 - 50, -1050), 1.0f);
+	GameObject* finalAreaWall2 = new GameObject(finalAreaWallMesh.getMesh(), glm::vec3(11125, wallHeight / 2 - 50, -1050), 1.0f);
 	wall_objects_vec.push_back(finalAreaWall2);
 
 	finalAreaWallMesh.set(1050, wallHeight, wallThickness);
-	GameObject* finalAreaWall3 = new GameObject(finalAreaWallMesh.getMesh(), glm::vec3(10640, wallHeight / 2 - 50, -1580), 1.0f);
+	GameObject* finalAreaWall3 = new GameObject(finalAreaWallMesh.getMesh(), glm::vec3(11025, wallHeight / 2 - 50, -1580), 1.0f);
 	finalAreaWall3->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
 	wall_objects_vec.push_back(finalAreaWall3);
 
-	GameObject* finalAreaWall4 = new GameObject(finalAreaWallMesh.getMesh(), glm::vec3(12480, wallHeight / 2 - 50, -1580), 1.0f);
+	GameObject* finalAreaWall4 = new GameObject(finalAreaWallMesh.getMesh(), glm::vec3(12075, wallHeight / 2 - 50, -1580), 1.0f);
 	finalAreaWall4->setOrientation(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
 	wall_objects_vec.push_back(finalAreaWall4);
 
-	// 11500 -2100
-	finalAreaWallMesh.set(2500, wallHeight, wallThickness);
+	finalAreaWallMesh.set(1125, wallHeight, wallThickness);
 	GameObject* finalAreaWall5 = new GameObject(finalAreaWallMesh.getMesh(), glm::vec3(11500, wallHeight / 2 - 50, -2100), 1.0f);
 	wall_objects_vec.push_back(finalAreaWall5);
 }

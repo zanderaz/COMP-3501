@@ -15,6 +15,8 @@
 #include "screenSpaceEffect.h"
 #include "TextBox.h"
 #include "EnemySpawner.h"
+#include "BoneSpikeGameObject.h"
+#include "BoneSpikeSpawner.h"
 
 class ofApp : public ofBaseApp {
 
@@ -42,11 +44,17 @@ public:
 
 	// helper functions
 	void setupSFX(void);
+	void setupShaders();
+	void setupTextures();
+	void setupTextElements();
+	void setupInteractableObjects();
+	void setupDynamicWalls();
 	static GLFWwindow* getGLFW(void);
 	void setRawMouseCapture(bool on);
 	void recenterCursorToWindowCenter(void);
 	void handleCheckpointCollision(CheckpointGameObject* checkpoint);
 	void spawnInfectedPS(const glm::vec3& position);
+
 
 	// collidable object creation
 	void createWalls();
@@ -162,6 +170,10 @@ private:
 	// bone marrow
 	GameObject* boneMarrowBlockingWall1;
 	GameObject* boneMarrowBlockingWall2;
+	BoneSpikeSpawner boneSpikeSpawner;
+	bool boneSpikeMinigameActive;
+	Timer boneSpikeMinigameTimer;
+	bool isBoneMarrowComplete;
 
 	// game over timer
 	Timer gameOverTimer;
@@ -180,5 +192,7 @@ private:
 
 	const float MUSIC_VOL = 0.2f;
 	const float SFX_VOL = 0.4f;
+
+	const float BONE_SPIKE_MINIGAME_DURATION = 45.0f;
 
 };
