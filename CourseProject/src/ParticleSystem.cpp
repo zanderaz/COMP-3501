@@ -74,19 +74,38 @@ void ParticleSystem::setupInfectionParticles() {
     vbo.setAttributeData(3, ids.data(), 1, particleCount, GL_STATIC_DRAW);
 }
 
+void ParticleSystem::setupSpawnPortalParticles() {
+    positions.resize(particleCount);
+    normals.resize(particleCount);
+    phases.resize(particleCount);
+    ids.resize(particleCount);
+
+    for (int i = 0; i < particleCount; i++) {
+        positions[i] = auraRingSample(60.0f);
+
+        normals[i] = glm::normalize(positions[i]) * ofRandom(10.0f, 20.0f);
+        ids[i] = i;
+        phases[i] = ofRandom(0, 1.0);
+    }
+
+    vbo.setVertexData(positions.data(), particleCount, GL_STATIC_DRAW);
+    vbo.setAttributeData(1, &normals[0].x, 3, particleCount, GL_STATIC_DRAW);
+    vbo.setAttributeData(2, phases.data(), 1, particleCount, GL_STATIC_DRAW);
+    vbo.setAttributeData(3, ids.data(), 1, particleCount, GL_STATIC_DRAW);
+}
+
 void ParticleSystem::update() {
     currentTime = ofGetElapsedTimef();
 }
 
 void ParticleSystem::draw() {
-    //ofDisableDepthTest();
+
+    ofEnableBlendMode(OF_BLENDMODE_ADD);
     glDepthMask(GL_FALSE); // dont write to depth buffer (still read)
-    //ofEnableBlendMode(OF_BLENDMODE_ADD);
-    ofEnableAlphaBlending();
+
     particleNode.setPosition(position);
 
     ofPushMatrix();
-
     shader.begin();
 
     shader.setUniform1f("pSize", particleSize); // particle point size
@@ -96,7 +115,6 @@ void ParticleSystem::draw() {
     ofMatrix4x4 modelMatrix = particleNode.getGlobalTransformMatrix();
     ofMatrix4x4 viewProjMatrix = cam.getModelViewProjectionMatrix();
     ofMatrix4x4 mvp = modelMatrix * viewProjMatrix;
-
     shader.setUniformMatrix4f("MVP", mvp);
 
     vbo.draw(GL_POINTS, 0, positions.size());
@@ -104,10 +122,9 @@ void ParticleSystem::draw() {
     shader.end();
     ofPopMatrix();
 
-    ofDisableAlphaBlending();
     glDepthMask(GL_TRUE); // turn back on depth writing
-    //redBloodCell.draw(0, 0);
-    //ofEnableDepthTest();
+    ofDisableBlendMode();
+
 }
 
 void ParticleSystem::setPosition(const glm::vec3& position) {
@@ -134,15 +151,9 @@ glm::vec3 ParticleSystem::sphere_sample(float rad) {
     return p;
 }
 
-/*
-glm::vec3 RedBloodCellParticleSystem::ring_sample() {
-    float randomRadius = ofRandom((ringRadius - 0.1f) / 2, (ringRadius + 0.1f) / 2);
-    float angle = ofRandom(0, TWO_PI);
-
-    float x = (cos(angle) * randomRadius) + ofRandom(-2, 2);
-    float y = 0; // ofRandom(-ringHeightVariation, ringHeightVariation);
-    float z = (sin(angle) * randomRadius) + ofRandom(-2, 2);
-
-    return glm::vec3(x, y, z);
+glm::vec3 ParticleSystem::auraRingSample(float rad) {
+    float angle = ofRandom(0, TWO_PI); // random angle
+    float x = rad * cos(angle); // using radius of the enemy sphere
+    float z = rad * sin(angle);
+    return glm::vec3(x, 0.0f, z);
 }
-*/

@@ -39,11 +39,9 @@ void ofApp::setup() {
 	cam.setFarClip(5000.0f);
 	cam.setFov(90.0f);
 
-	// test object related
+	// setup meshes
 	skySphere.setRadius(1000);
 	skySphere.setResolution(6);
-
-	// setup meshes
 	power_up_mesh.setRadius(20);
 	power_up_mesh.setResolution(10);
 	empty_mesh.setRadius(0);
@@ -54,7 +52,7 @@ void ofApp::setup() {
 
 	// init light position to above the player
 	light_pos = player->getPosition(); 
-	light_pos.y = 420.0f;
+	light_pos.y = LIGHT_HEIGHT;
 
 	// example objs (FOR TESTING PURPOSES, NOT USEFUL AT ALL RN)
 	/*
@@ -73,6 +71,14 @@ void ofApp::setup() {
 	rbc->setupRbcParticles();
 	ofMesh mesh = ofMesh::sphere(25, 100);
 	redBloodCell = new RedBloodCell(rbc, mesh, glm::vec3(20, 200, -20), 1.0f);
+
+	// TEST CODE FOR SPAWN PORTAL ONLY, NUKE LATER
+	ParticleSystem* sp = new ParticleSystem(player->getCamera(), 250);
+	sp->loadShader("shader/portal_particle.vert", "shader/portal_particle.frag", "shader/portal_particle.geom");
+	sp->loadImage("images/smoketex.png");
+	sp->setupSpawnPortalParticles();
+	sp->setPosition(glm::vec3(0, 200, -100));
+	spawn_portal_ps_vec.push_back(sp);
 
 	// setup SSE handler
 	screenSpaceEffect.setup(ofGetWidth(), ofGetHeight());
@@ -164,11 +170,15 @@ void ofApp::exit(void) {
 	}
 	interactables_vec.clear();
 
-	for (auto holder : infection_ps_vec) {
-		delete holder;
+	for (ParticleSystem* ps : infection_ps_vec) {
+		delete ps;
 	}
 	infection_ps_vec.clear();
 
+	for (ParticleSystem* ps : spawn_portal_ps_vec) {
+		delete ps;
+	}
+	spawn_portal_ps_vec.clear();
 
 	enemySpawner.clearEnemies();
 	boneSpikeSpawner.clearSpikes();
@@ -209,11 +219,6 @@ void ofApp::update() {
 			/*** PLAYER HANDLING ***/
 
 			player->update(delta_time);
-
-			// check if player should be able to be hit
-			if (player->getInvincibilityTimer().FinishedAndStop()) {
-				//player->setColour(glm::vec3(255.0f));
-			}
 
 			/*** ENEMY HANDLING (OLD) ***/
 
@@ -258,17 +263,19 @@ void ofApp::update() {
 			}
 
 			if (boneMarrow) {
-				// Update bone spike minigame
+				// update bone spike minigame
 				if (boneSpikeMinigameActive) {
 					boneSpikeSpawner.update(delta_time, player);
 
-					// Check if minigame is complete
+					// check if minigame is complete
 					if (boneSpikeSpawner.isComplete()) {
 						boneSpikeMinigameActive = false;
 						boneSpikeSpawner.stopMinigame();
 						isBoneMarrowComplete = true;
-						// Player wins - show victory screen or teleport to next area
-						game_state = 3; // Game won state
+
+						// end of the game - show victory screen
+						gameOverTimer.Start(10.0f);
+						game_state = 3; // game won state
 					}
 				}
 			}
@@ -307,17 +314,25 @@ void ofApp::update() {
 			/*** PARTICLE SYSTEM HANDLING ***/
 
 			redBloodCell->update(delta_time); // will update particle system stored inside
-			for (ParticleSystem* psh : infection_ps_vec) {
-				psh->update();
+			for (ParticleSystem* i_ps : infection_ps_vec) {
+				i_ps->update();
+			}
+			for (ParticleSystem* sp_ps : spawn_portal_ps_vec) {
+				sp_ps->update();
 			}
 
 			/*** LIGHT SOURCE HANDLING ***/
 
 			glm::vec3 targetPos = player->getPosition();
-			targetPos.y = 420.0f; // ensure light is above player
+			targetPos.y = LIGHT_HEIGHT; // ensure light is above player
 			float lerpSpeed = 0.5f * delta_time;
 			light_pos = glm::mix(light_pos, targetPos, lerpSpeed);
 			lightSphere.setPosition(light_pos);
+
+			/*** SCREEN SPACE EFFECT HANDLING ***/
+
+			screenSpaceEffect.setInBloodstream(bloodstream);
+			screenSpaceEffect.setSpeedBoostActive(player->isSpeedBoostOn());
 
 		}
 	}
@@ -331,7 +346,9 @@ void ofApp::update() {
 
 	// -------------------- GAME WON GAME STATE ---------------------------
 	else if (game_state == 3) {
-		
+		if (gameOverTimer.Finished()) {
+			ofExit();
+		}
 	}
 
 }
@@ -407,15 +424,12 @@ void ofApp::draw() {
 	// -------------------- GAMEPLAY GAME STATE ---------------------------
 	else if (game_state == 1) {
 
-		// everything below (until fbo is ended) will get put in the frame buffer for screen-space effects
-		screenSpaceEffect.setInBloodstream(bloodstream);
-		screenSpaceEffect.setSpeedBoostActive(player->isSpeedBoostOn());
-
 		screenSpaceEffect.begin();
 		ofEnableDepthTest();
 		player->getCamera().begin();
 
 		// Draw skybox first
+		glDepthMask(GL_FALSE);
 		skyBoxShader->begin();
 
 		skyBoxShader->setUniformTexture("skyTexture", skyTexture, 0);
@@ -429,7 +443,6 @@ void ofApp::draw() {
 		ofPopMatrix();
 
 		skyBoxShader->end();
-
 		glDepthMask(GL_TRUE);
 
 		lightingShader->begin();
@@ -461,7 +474,7 @@ void ofApp::draw() {
 		glm::vec3 viewCam = glm::vec3(view * glm::vec4(camPos, 1.0));
 		lightingShader->setUniform3f("viewPos", viewCam);
 		
-		// draw the light source sphere - needs additional uniforms (set in gameobject class, however this is not a gameobject)
+		// draw the light source sphere - needs additional uniforms (normally set in gameobject class)
 		lightingShader->setUniformMatrix4f("worldMatrix", lightSphere.getGlobalTransformMatrix());
 		lightingShader->setUniform3f("objectColor", glm::vec3(1.0, 0.9, 0.2));
 		lightingShader->setUniform1i("isLight", true);
@@ -522,8 +535,9 @@ void ofApp::draw() {
 		for (ParticleSystem* ps : infection_ps_vec) {
 			ps->draw();
 		}
-
-		//enemySpawner.draw(lightingShader);
+		for (ParticleSystem* sp_ps : spawn_portal_ps_vec) {
+			sp_ps->draw();
+		}
 
 		lightingShader->end();
 
@@ -558,16 +572,19 @@ void ofApp::draw() {
 	// -------------------- GAME OVER GAME STATE ---------------------------
 	else if (game_state == 2) {
 		if (!gameOverTimer.Finished()) {
-			ofRectangle title_bounds = game_over_font.getStringBoundingBox("GAME OVER!", 0, 0);
+			ofRectangle title_bounds = game_over_font.getStringBoundingBox(GAME_OVER_TEXT, 0, 0);
 			float title_x = ofGetWidth() / 2.0f - (title_bounds.width / 2.0f);
 			float title_y = ofGetHeight() / 2.0f;
-			game_over_font.drawString("GAME OVER!", title_x, title_y);
+			game_over_font.drawString(GAME_OVER_TEXT, title_x, title_y);
 		}
 	}
 
 	// -------------------- GAME WON GAME STATE ---------------------------
 	else if (game_state == 3) {
-		// to-do
+		ofRectangle title_bounds = game_over_font.getStringBoundingBox(GAME_WON_TEXT, 0, 0);
+		float title_x = ofGetWidth() / 2.0f - (title_bounds.width / 2.0f);
+		float title_y = ofGetHeight() / 2.0f;
+		game_over_font.drawString(GAME_WON_TEXT, title_x, title_y);
 	}
 }
 
@@ -824,7 +841,6 @@ void ofApp::setupSFX(void) {
 	checkpoint_teleport.load("sfx/teleport.wav");
 	checkpoint_teleport.setLoop(false);
 	checkpoint_teleport.setVolume(SFX_VOL);
-
 }
 
 void ofApp::setupShaders() {
@@ -961,11 +977,13 @@ void ofApp::createWalls() {
 	createWallsSection3();
 	createWallsSection4();
 	createVeins();
+	createBloodStreamLookout();
 
 	// bone marrow
 	createWallsSection5();
 	createWallsSection6();
 	createWallsSection7();
+	createBoneMarrowLookout();
 
 	/*
 	ofLog() << "Created walls: " << wall_objects_vec.size() << " objects";
@@ -1009,8 +1027,8 @@ void ofApp::createWallsSection1() {
 
 	// floor
 	ofBoxPrimitive floorMesh;
-	floorMesh.set(10000, 5, 10000);
-	GameObject* floor = new GameObject(floorMesh.getMesh(), glm::vec3(0, -50, 0), 1.0f);
+	floorMesh.set(7000, 5, 6000);
+	GameObject* floor = new GameObject(floorMesh.getMesh(), glm::vec3(-1850, -50, -100), 1.0f);
 	wall_objects_vec.push_back(floor);
 
 	// starting room
@@ -1062,8 +1080,8 @@ void ofApp::createWallsSection1() {
 
 	// big ceiling for now
 	ofBoxPrimitive ceilingMesh;
-	ceilingMesh.set(10000, 5, 10000);
-	GameObject* ceiling = new GameObject(ceilingMesh.getMesh(), glm::vec3(0, wallHeight - 50, 0), 1.0f);
+	ceilingMesh.set(5000, 5, 2200);
+	GameObject* ceiling = new GameObject(ceilingMesh.getMesh(), glm::vec3(-1500, wallHeight - 50, 700), 1.0f);
 	ceiling->setVisible(false);
 	wall_objects_vec.push_back(ceiling);
 
@@ -1417,6 +1435,65 @@ void ofApp::setupInteractableObjects() {
 	interactables_vec.push_back(interact_obj13);
 }
 
+// create the lookout point down the right side diagonal hallway
+void ofApp::createBloodStreamLookout() {
+
+	float wall_thickness = 20.0f;
+	float wall_height = 200.0f;
+	ofBoxPrimitive reused_mesh;
+
+	// inner
+	reused_mesh.set(240, wall_height + 40, wall_thickness);
+	GameObject* upward_wall1 = new GameObject(reused_mesh.getMesh(), glm::vec3(-1830, 280, -400), 1.0f);
+	wall_objects_vec.push_back(upward_wall1);
+
+	// outer wall, tallest one
+	reused_mesh.set(240, wall_height * 3 + 50, wall_thickness);
+	GameObject* upward_wall2 = new GameObject(reused_mesh.getMesh(), glm::vec3(-1870, 280, -520), 1.0f);
+	wall_objects_vec.push_back(upward_wall2);
+
+	// left wall
+	reused_mesh.set(wall_thickness, wall_height * 2, 125);
+	GameObject* upward_wall3 = new GameObject(reused_mesh.getMesh(), glm::vec3(-1967, 400, -460), 1.0f);
+	upward_wall3->setOrientation(glm::angleAxis(glm::radians(20.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(upward_wall3);
+
+	// right wall
+	reused_mesh.set(wall_thickness, wall_height * 2, 125);
+	GameObject* upward_wall4 = new GameObject(reused_mesh.getMesh(), glm::vec3(-1738, 400, -457), 1.0f);
+	upward_wall4->setOrientation(glm::angleAxis(glm::radians(20.0f), glm::vec3(0, 1, 0)));
+	wall_objects_vec.push_back(upward_wall4);
+
+	// balcony floor
+	reused_mesh.set(240, wall_thickness, 150);
+	GameObject* balcony_floor = new GameObject(reused_mesh.getMesh(), glm::vec3(-1830, 395, -325), 1.0f);
+	wall_objects_vec.push_back(balcony_floor);
+
+	// balcony roof
+	reused_mesh.set(260, wall_thickness / 2, 280);
+	GameObject* balcony_roof = new GameObject(reused_mesh.getMesh(), glm::vec3(-1840, 590, -390), 1.0f);
+	wall_objects_vec.push_back(balcony_roof);
+
+	// invisible barrier, front of lookout
+	reused_mesh.set(240, wall_height, wall_thickness);
+	GameObject* invis_front = new GameObject(reused_mesh.getMesh(), glm::vec3(-1830, 500, -250), 1.0f);
+	invis_front->setVisible(false);
+	wall_objects_vec.push_back(invis_front);
+
+	// invisible barrier, left of lookout
+	reused_mesh.set(wall_thickness, wall_height, 160);
+	GameObject* invis_left = new GameObject(reused_mesh.getMesh(), glm::vec3(-1710, 500, -325), 1.0f);
+	invis_left->setVisible(false);
+	wall_objects_vec.push_back(invis_left);
+
+	// invisible barrier, right of lookout
+	reused_mesh.set(wall_thickness, wall_height, 160);
+	GameObject* invis_right = new GameObject(reused_mesh.getMesh(), glm::vec3(-1950, 500, -325), 1.0f);
+	invis_right->setVisible(false);
+	wall_objects_vec.push_back(invis_right);
+
+}
+
 // functions to start/end blood bullet hell
 void ofApp::startBloodBulletHell(float duration) {
 	bloodBulletHellActive = true;
@@ -1483,21 +1560,28 @@ void ofApp::updateBoneMarrowBlockingWalls() {
 
 // start of bone marrow area
 void ofApp::createWallsSection5() {
+
 	// wall dimensions
 	float wallThickness = 20.0f;
 	float wallHeight = 300.0f;
 
 	// floor
 	ofBoxPrimitive floorMesh;
-	floorMesh.set(10000, 5, 10000);
-	GameObject* floor = new GameObject(floorMesh.getMesh(), glm::vec3(15000, -50, 0), 1.0f);
+	floorMesh.set(8000, 5, 8000);
+	GameObject* floor = new GameObject(floorMesh.getMesh(), glm::vec3(13000, -50, -500), 1.0f);
 	wall_objects_vec.push_back(floor);
 
+	// ceiling (big on right side, smaller ver on left so that the lookout still works
 	ofBoxPrimitive ceilingMesh;
-	ceilingMesh.set(10000, 5, 10000);
-	GameObject* ceiling = new GameObject(ceilingMesh.getMesh(), glm::vec3(15000, wallHeight - 50, 0), 1.0f);
-	ceiling->setVisible(false);
-	wall_objects_vec.push_back(ceiling);
+	ceilingMesh.set(5000, 5, 4000);
+	GameObject* ceiling1 = new GameObject(ceilingMesh.getMesh(), glm::vec3(13000, wallHeight - 50, -1100), 1.0f);
+	ceiling1->setVisible(false);
+	wall_objects_vec.push_back(ceiling1);
+
+	ceilingMesh.set(2000, 5, 1000);
+	GameObject* ceiling2 = new GameObject(ceilingMesh.getMesh(), glm::vec3(14000, wallHeight - 50, 1100), 1.0f);
+	ceiling2->setVisible(false);
+	wall_objects_vec.push_back(ceiling2);
 
 	// starting area
 
@@ -1675,4 +1759,60 @@ void ofApp::createWallsSection7() {
 	finalAreaWallMesh.set(1125, wallHeight, wallThickness);
 	GameObject* finalAreaWall5 = new GameObject(finalAreaWallMesh.getMesh(), glm::vec3(11500, wallHeight / 2 - 50, -2100), 1.0f);
 	wall_objects_vec.push_back(finalAreaWall5);
+}
+
+// create the lookout zone for the bone marrow area
+void ofApp::createBoneMarrowLookout() {
+	float wall_thickness = 10.0f;
+	float wall_height = 200.0f;
+	ofBoxPrimitive reused_mesh;
+
+	// inner
+	reused_mesh.set(300, wall_height + 40, wall_thickness);
+	GameObject* upward_wall1 = new GameObject(reused_mesh.getMesh(), glm::vec3(12550, 280, 900), 1.0f);
+	wall_objects_vec.push_back(upward_wall1);
+
+	// outer wall, tallest one
+	reused_mesh.set(300, wall_height * 3 + 50, wall_thickness);
+	GameObject* upward_wall2 = new GameObject(reused_mesh.getMesh(), glm::vec3(12550, 280, 1200), 1.0f);
+	wall_objects_vec.push_back(upward_wall2);
+
+	// left wall
+	reused_mesh.set(wall_thickness, wall_height * 3 + 50, 300);
+	GameObject* upward_wall3 = new GameObject(reused_mesh.getMesh(), glm::vec3(12700, 280, 1050), 1.0f);
+	wall_objects_vec.push_back(upward_wall3);
+
+	// right wall
+	reused_mesh.set(wall_thickness, wall_height * 3 + 50, 300);
+	GameObject* upward_wall4 = new GameObject(reused_mesh.getMesh(), glm::vec3(12400, 280, 1050), 1.0f);
+	wall_objects_vec.push_back(upward_wall4);
+
+	// balcony floor
+	reused_mesh.set(300, wall_thickness, 150);
+	GameObject* balcony_floor = new GameObject(reused_mesh.getMesh(), glm::vec3(12550, 395, 825), 1.0f);
+	wall_objects_vec.push_back(balcony_floor);
+
+	// balcony roof
+	reused_mesh.set(300, wall_thickness / 2, 450);
+	GameObject* balcony_roof = new GameObject(reused_mesh.getMesh(), glm::vec3(12550, 590, 975), 1.0f);
+	wall_objects_vec.push_back(balcony_roof);
+
+	// invisible barrier, front of lookout
+	reused_mesh.set(300, wall_height, wall_thickness / 2);
+	GameObject* invis_front = new GameObject(reused_mesh.getMesh(), glm::vec3(12550, 500, 750), 1.0f);
+	invis_front->setVisible(false);
+	wall_objects_vec.push_back(invis_front);
+
+	// invisible barrier, left of lookout
+	reused_mesh.set(wall_thickness / 2, wall_height, 150);
+	GameObject* invis_left = new GameObject(reused_mesh.getMesh(), glm::vec3(12400, 500, 825), 1.0f);
+	invis_left->setVisible(false);
+	wall_objects_vec.push_back(invis_left);
+
+	// invisible barrier, right of lookout
+	reused_mesh.set(wall_thickness / 2, wall_height, 150);
+	GameObject* invis_right = new GameObject(reused_mesh.getMesh(), glm::vec3(12700, 500, 825), 1.0f);
+	invis_right->setVisible(false);
+	wall_objects_vec.push_back(invis_right);
+
 }

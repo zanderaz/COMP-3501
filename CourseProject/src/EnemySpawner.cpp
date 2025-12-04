@@ -182,9 +182,8 @@ void EnemySpawner::update(float deltaTime, PlayerGameObject* player) {
         const glm::vec3 toPlayer = playerPos - enemy->getPosition();
         const float combinedRadius = collisionRadius + enemy->getRadius();
         const float combinedRadiusSq = combinedRadius * combinedRadius;
-        if (glm::length2(toPlayer) <= combinedRadiusSq && !player->getInvincibilityTimer().IsRunning()) {
-            player->getInvincibilityTimer().Start(1.0f);
-            player->setHealth(player->getHealth() - 1);
+        if (glm::length2(toPlayer) <= combinedRadiusSq) {
+            player->takeDamage();
 
             delete enemy;
             enemies.erase(enemies.begin() + i);

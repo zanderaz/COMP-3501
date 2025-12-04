@@ -19,6 +19,12 @@ PlayerGameObject::PlayerGameObject(const ofMesh& mesh, const glm::vec3& position
 
     speed_boost_cd_timer.Start(0.5f); // initial CD, pretty irrelevant
     speed_boost_on = false;
+    invincibility_timer.Start(0.5f);
+
+    // player hit
+    player_hit.load("sfx/player_hit.wav");
+    player_hit.setLoop(false);
+    player_hit.setVolume(0.4f); // this should be linked to SFX_VOL but i just smt that works rn
 }
 
 
@@ -122,8 +128,17 @@ void PlayerGameObject::update(float delta_time) {
     cam.setOrientation(orientation);
 }
 
+// helper function for taking damage
+void PlayerGameObject::takeDamage(void) {
+    if (health > 0 && invincibility_timer.Finished()) {
+        health--;
+        invincibility_timer.Start(1.0f);
+        player_hit.play();
+    }
+}
 
-/*** resolve any collisions after position is updated ***/
+
+/*** resolve any collisions after position is updated using AABB ***/
 void PlayerGameObject::resolveCollisions(void) {
     if (!walls) return;
 
@@ -133,15 +148,12 @@ void PlayerGameObject::resolveCollisions(void) {
             continue;
         }
 
-        // transform player position to Wall's Local Space
-        // we use the inverse of the wall's world matrix to go from World -> Local
+        // transform player position to wall's local space (invert wall's world mat)
         glm::mat4 worldToLocal = glm::inverse(wall->getWorldMatrix());
         glm::vec3 localPos = glm::vec3(worldToLocal * glm::vec4(position, 1.0f));
 
-        // find the closest point on the wall's bounding box in Local Space
-        // iterate vertices to find min/max bounds (AABB) of the mesh
-        if (wall->getMesh().getNumVertices() == 0) continue;
-        const glm::vec3& minBound = wall->getLocalMinBound(); // now computing min/max bounds on setup
+        // find the closest point on the wall's bounding box in local space
+        const glm::vec3& minBound = wall->getLocalMinBound();
         const glm::vec3& maxBound = wall->getLocalMaxBound();
 
         // clamp local player position to the box bounds to find the closest point on the surface/inside
