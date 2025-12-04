@@ -39,11 +39,9 @@ void ofApp::setup() {
 	cam.setFarClip(5000.0f);
 	cam.setFov(90.0f);
 
-	// test object related
+	// setup meshes
 	skySphere.setRadius(1000);
 	skySphere.setResolution(6);
-
-	// setup meshes
 	power_up_mesh.setRadius(20);
 	power_up_mesh.setResolution(10);
 	empty_mesh.setRadius(0);
@@ -222,11 +220,6 @@ void ofApp::update() {
 
 			player->update(delta_time);
 
-			// check if player should be able to be hit
-			if (player->getInvincibilityTimer().FinishedAndStop()) {
-				//player->setColour(glm::vec3(255.0f));
-			}
-
 			/*** ENEMY HANDLING (OLD) ***/
 
 			// updates for opps
@@ -270,17 +263,19 @@ void ofApp::update() {
 			}
 
 			if (boneMarrow) {
-				// Update bone spike minigame
+				// update bone spike minigame
 				if (boneSpikeMinigameActive) {
 					boneSpikeSpawner.update(delta_time, player);
 
-					// Check if minigame is complete
+					// check if minigame is complete
 					if (boneSpikeSpawner.isComplete()) {
 						boneSpikeMinigameActive = false;
 						boneSpikeSpawner.stopMinigame();
 						isBoneMarrowComplete = true;
-						// Player wins - show victory screen or teleport to next area
-						game_state = 3; // Game won state
+
+						// end of the game - show victory screen
+						gameOverTimer.Start(10.0f);
+						game_state = 3; // game won state
 					}
 				}
 			}
@@ -335,6 +330,7 @@ void ofApp::update() {
 			lightSphere.setPosition(light_pos);
 
 			/*** SCREEN SPACE EFFECT HANDLING ***/
+
 			screenSpaceEffect.setInBloodstream(bloodstream);
 			screenSpaceEffect.setSpeedBoostActive(player->isSpeedBoostOn());
 
@@ -350,7 +346,9 @@ void ofApp::update() {
 
 	// -------------------- GAME WON GAME STATE ---------------------------
 	else if (game_state == 3) {
-		
+		if (gameOverTimer.Finished()) {
+			ofExit();
+		}
 	}
 
 }
@@ -574,16 +572,19 @@ void ofApp::draw() {
 	// -------------------- GAME OVER GAME STATE ---------------------------
 	else if (game_state == 2) {
 		if (!gameOverTimer.Finished()) {
-			ofRectangle title_bounds = game_over_font.getStringBoundingBox("GAME OVER!", 0, 0);
+			ofRectangle title_bounds = game_over_font.getStringBoundingBox(GAME_OVER_TEXT, 0, 0);
 			float title_x = ofGetWidth() / 2.0f - (title_bounds.width / 2.0f);
 			float title_y = ofGetHeight() / 2.0f;
-			game_over_font.drawString("GAME OVER!", title_x, title_y);
+			game_over_font.drawString(GAME_OVER_TEXT, title_x, title_y);
 		}
 	}
 
 	// -------------------- GAME WON GAME STATE ---------------------------
 	else if (game_state == 3) {
-		// to-do
+		ofRectangle title_bounds = game_over_font.getStringBoundingBox(GAME_WON_TEXT, 0, 0);
+		float title_x = ofGetWidth() / 2.0f - (title_bounds.width / 2.0f);
+		float title_y = ofGetHeight() / 2.0f;
+		game_over_font.drawString(GAME_WON_TEXT, title_x, title_y);
 	}
 }
 
@@ -840,7 +841,6 @@ void ofApp::setupSFX(void) {
 	checkpoint_teleport.load("sfx/teleport.wav");
 	checkpoint_teleport.setLoop(false);
 	checkpoint_teleport.setVolume(SFX_VOL);
-
 }
 
 void ofApp::setupShaders() {
@@ -977,12 +977,13 @@ void ofApp::createWalls() {
 	createWallsSection3();
 	createWallsSection4();
 	createVeins();
-	createLookout();
+	createBloodStreamLookout();
 
 	// bone marrow
 	createWallsSection5();
 	createWallsSection6();
 	createWallsSection7();
+	createBoneMarrowLookout();
 
 	/*
 	ofLog() << "Created walls: " << wall_objects_vec.size() << " objects";
@@ -1026,8 +1027,8 @@ void ofApp::createWallsSection1() {
 
 	// floor
 	ofBoxPrimitive floorMesh;
-	floorMesh.set(10000, 5, 10000);
-	GameObject* floor = new GameObject(floorMesh.getMesh(), glm::vec3(0, -50, 0), 1.0f);
+	floorMesh.set(7000, 5, 6000);
+	GameObject* floor = new GameObject(floorMesh.getMesh(), glm::vec3(-1850, -50, -100), 1.0f);
 	wall_objects_vec.push_back(floor);
 
 	// starting room
@@ -1435,7 +1436,7 @@ void ofApp::setupInteractableObjects() {
 }
 
 // create the lookout point down the right side diagonal hallway
-void ofApp::createLookout() {
+void ofApp::createBloodStreamLookout() {
 
 	float wall_thickness = 20.0f;
 	float wall_height = 200.0f;
@@ -1559,21 +1560,28 @@ void ofApp::updateBoneMarrowBlockingWalls() {
 
 // start of bone marrow area
 void ofApp::createWallsSection5() {
+
 	// wall dimensions
 	float wallThickness = 20.0f;
 	float wallHeight = 300.0f;
 
 	// floor
 	ofBoxPrimitive floorMesh;
-	floorMesh.set(10000, 5, 10000);
-	GameObject* floor = new GameObject(floorMesh.getMesh(), glm::vec3(15000, -50, 0), 1.0f);
+	floorMesh.set(8000, 5, 8000);
+	GameObject* floor = new GameObject(floorMesh.getMesh(), glm::vec3(13000, -50, -500), 1.0f);
 	wall_objects_vec.push_back(floor);
 
+	// ceiling (big on right side, smaller ver on left so that the lookout still works
 	ofBoxPrimitive ceilingMesh;
-	ceilingMesh.set(10000, 5, 10000);
-	GameObject* ceiling = new GameObject(ceilingMesh.getMesh(), glm::vec3(15000, wallHeight - 50, 0), 1.0f);
-	ceiling->setVisible(false);
-	wall_objects_vec.push_back(ceiling);
+	ceilingMesh.set(5000, 5, 4000);
+	GameObject* ceiling1 = new GameObject(ceilingMesh.getMesh(), glm::vec3(13000, wallHeight - 50, -1100), 1.0f);
+	ceiling1->setVisible(false);
+	wall_objects_vec.push_back(ceiling1);
+
+	ceilingMesh.set(2000, 5, 1000);
+	GameObject* ceiling2 = new GameObject(ceilingMesh.getMesh(), glm::vec3(14000, wallHeight - 50, 1100), 1.0f);
+	ceiling2->setVisible(false);
+	wall_objects_vec.push_back(ceiling2);
 
 	// starting area
 
@@ -1751,4 +1759,60 @@ void ofApp::createWallsSection7() {
 	finalAreaWallMesh.set(1125, wallHeight, wallThickness);
 	GameObject* finalAreaWall5 = new GameObject(finalAreaWallMesh.getMesh(), glm::vec3(11500, wallHeight / 2 - 50, -2100), 1.0f);
 	wall_objects_vec.push_back(finalAreaWall5);
+}
+
+// create the lookout zone for the bone marrow area
+void ofApp::createBoneMarrowLookout() {
+	float wall_thickness = 10.0f;
+	float wall_height = 200.0f;
+	ofBoxPrimitive reused_mesh;
+
+	// inner
+	reused_mesh.set(300, wall_height + 40, wall_thickness);
+	GameObject* upward_wall1 = new GameObject(reused_mesh.getMesh(), glm::vec3(12550, 280, 900), 1.0f);
+	wall_objects_vec.push_back(upward_wall1);
+
+	// outer wall, tallest one
+	reused_mesh.set(300, wall_height * 3 + 50, wall_thickness);
+	GameObject* upward_wall2 = new GameObject(reused_mesh.getMesh(), glm::vec3(12550, 280, 1200), 1.0f);
+	wall_objects_vec.push_back(upward_wall2);
+
+	// left wall
+	reused_mesh.set(wall_thickness, wall_height * 3 + 50, 300);
+	GameObject* upward_wall3 = new GameObject(reused_mesh.getMesh(), glm::vec3(12700, 280, 1050), 1.0f);
+	wall_objects_vec.push_back(upward_wall3);
+
+	// right wall
+	reused_mesh.set(wall_thickness, wall_height * 3 + 50, 300);
+	GameObject* upward_wall4 = new GameObject(reused_mesh.getMesh(), glm::vec3(12400, 280, 1050), 1.0f);
+	wall_objects_vec.push_back(upward_wall4);
+
+	// balcony floor
+	reused_mesh.set(300, wall_thickness, 150);
+	GameObject* balcony_floor = new GameObject(reused_mesh.getMesh(), glm::vec3(12550, 395, 825), 1.0f);
+	wall_objects_vec.push_back(balcony_floor);
+
+	// balcony roof
+	reused_mesh.set(300, wall_thickness / 2, 450);
+	GameObject* balcony_roof = new GameObject(reused_mesh.getMesh(), glm::vec3(12550, 590, 975), 1.0f);
+	wall_objects_vec.push_back(balcony_roof);
+
+	// invisible barrier, front of lookout
+	reused_mesh.set(300, wall_height, wall_thickness / 2);
+	GameObject* invis_front = new GameObject(reused_mesh.getMesh(), glm::vec3(12550, 500, 750), 1.0f);
+	invis_front->setVisible(false);
+	wall_objects_vec.push_back(invis_front);
+
+	// invisible barrier, left of lookout
+	reused_mesh.set(wall_thickness / 2, wall_height, 150);
+	GameObject* invis_left = new GameObject(reused_mesh.getMesh(), glm::vec3(12400, 500, 825), 1.0f);
+	invis_left->setVisible(false);
+	wall_objects_vec.push_back(invis_left);
+
+	// invisible barrier, right of lookout
+	reused_mesh.set(wall_thickness / 2, wall_height, 150);
+	GameObject* invis_right = new GameObject(reused_mesh.getMesh(), glm::vec3(12700, 500, 825), 1.0f);
+	invis_right->setVisible(false);
+	wall_objects_vec.push_back(invis_right);
+
 }

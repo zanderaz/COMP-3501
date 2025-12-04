@@ -29,6 +29,7 @@ public:
 	// render and logic
 	void draw(ofShader* lightingShader) override;
 	void update(float delta_time) override;
+	void takeDamage(void);
 
 	// collisions
 	inline void setWalls(vector<GameObject*>* walls_vec) { walls = walls_vec; }
@@ -72,6 +73,7 @@ protected:
 	int health;
 	Timer invincibility_timer;
 	MyCustomCamera cam;
+	ofSoundPlayer player_hit;
 
 };
 #endif

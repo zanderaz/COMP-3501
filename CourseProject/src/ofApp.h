@@ -65,7 +65,7 @@ public:
 	void createWallsSection3();
 	void createWallsSection4();
 	void createVeins();
-	void createLookout();
+	void createBloodStreamLookout();
 	void startBloodBulletHell(float duration = 30.0f);
 	void endBloodBulletHell();
 	void updateBulletHellWall();
@@ -76,6 +76,7 @@ public:
 	void createWallsSection5();
 	void createWallsSection6();
 	void createWallsSection7();
+	void createBoneMarrowLookout();
 
 
 private:
@@ -186,6 +187,8 @@ private:
 	const string START_TEXT = "Start Game";
 	const string QUIT_TEXT = "Quit Game";
 	const string INTERACT_TEXT = "Press ' f ' to Infect.";
+	const string GAME_OVER_TEXT = "GAME OVER!";
+	const string GAME_WON_TEXT = "YOU WIN! Congrats!";
 
 	const float INTERACT_RANGE = 100.0f;
 	const float LIGHT_HEIGHT = 620.0f;

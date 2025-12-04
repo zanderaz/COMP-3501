@@ -19,6 +19,12 @@ PlayerGameObject::PlayerGameObject(const ofMesh& mesh, const glm::vec3& position
 
     speed_boost_cd_timer.Start(0.5f); // initial CD, pretty irrelevant
     speed_boost_on = false;
+    invincibility_timer.Start(0.5f);
+
+    // player hit
+    player_hit.load("sfx/player_hit.wav");
+    player_hit.setLoop(false);
+    player_hit.setVolume(0.4f); // this should be linked to SFX_VOL but i just smt that works rn
 }
 
 
@@ -120,6 +126,15 @@ void PlayerGameObject::update(float delta_time) {
     // update camera position to match
     cam.setPosition(position);
     cam.setOrientation(orientation);
+}
+
+// helper function for taking damage
+void PlayerGameObject::takeDamage(void) {
+    if (health > 0 && invincibility_timer.Finished()) {
+        health--;
+        invincibility_timer.Start(1.0f);
+        player_hit.play();
+    }
 }
 
 
