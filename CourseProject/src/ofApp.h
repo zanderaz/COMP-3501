@@ -217,8 +217,8 @@ private:
 
 	const float PORTAL_ENEMY_LIFETIME = 10.0f;
 	const float PORTAL_ENEMY_SPEED = 250.0f;
-	const float PORTAL_ENEMY_YAW_SPREAD = glm::radians(30.0f);
-	const float PORTAL_ENEMY_PITCH_SPREAD = glm::radians(30.0f);
+	const float PORTAL_ENEMY_YAW_SPREAD = glm::radians(20.0f);
+	const float PORTAL_ENEMY_PITCH_SPREAD = glm::radians(40.0f);
 	const int PORTAL_ENEMY_COUNT = 6;
 	const int PORTAL_BURST_COUNT = 4;
 	const float PORTAL_BURST_INTERVAL = 1.5f;
