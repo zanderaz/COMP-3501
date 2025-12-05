@@ -50,7 +50,15 @@ void EnemySpawner::spawnEnemy() {
     //ofLog() << "Spawning enemy at position: " << spawnPos;
 
     // create enemy at spawn point
-    EnemyGameObject* enemy = new EnemyGameObject(*enemyMesh, spawnPos, 1.0f);
+    //EnemyGameObject* enemy = new EnemyGameObject(*enemyMesh, spawnPos, 1.0f);
+
+    ParticleSystem* rbc = new ParticleSystem(player->getCamera(), 25);
+    rbc->loadShader("shader/rbcparticle.vert", "shader/rbcparticle.frag", "shader/rbcparticle.geom");
+    rbc->loadImage("images/redbloodcell.jpg");
+    rbc->setupRbcParticles();
+    ofMesh mesh = ofMesh::sphere(25, 100);
+    RedBloodCell* redBloodCell = new RedBloodCell(rbc, mesh, spawnPos, 1.0f);
+    redBloodCell->setRadius(15);
 
     // Define wall positions
 
@@ -156,9 +164,11 @@ void EnemySpawner::spawnEnemy() {
 
     // enemy velocity
     float speed = 300.0f;
-    enemy->setVelocity(direction * speed);
+    redBloodCell->setVelocity(direction * speed);
 
-    enemies.push_back(enemy);
+    enemies.push_back(redBloodCell);
+
+    ofLog() << enemies.size();
 
     // restart timer for next spawn
     spawnTimer.Start(spawnInterval);
@@ -175,7 +185,7 @@ void EnemySpawner::update(float deltaTime, PlayerGameObject* player) {
     const float collisionRadiusSq = collisionRadius * collisionRadius;
 
     for (int i = enemies.size() - 1; i >= 0; i--) {
-        EnemyGameObject* enemy = enemies[i];
+        RedBloodCell* enemy = enemies[i];
         enemy->update(deltaTime);
 
         // collision with player
@@ -200,14 +210,15 @@ void EnemySpawner::update(float deltaTime, PlayerGameObject* player) {
     }
 }
 
+// not being used
 void EnemySpawner::draw(ofShader* shader) {
-    for (auto enemy : enemies) {
+    for (RedBloodCell* enemy : enemies) {
         enemy->draw(shader);
     }
 }
 
 void EnemySpawner::clearEnemies() {
-    for (auto enemy : enemies) {
+    for (RedBloodCell* enemy : enemies) {
         delete enemy;
     }
     enemies.clear();

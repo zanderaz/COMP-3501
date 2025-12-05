@@ -6,14 +6,16 @@
 #include <glm/glm.hpp>
 #include "ParticleSystem.h"
 #include "GameObject.h"
+#include "EnemyGameObject.h"
 
 
-class RedBloodCell : public GameObject {
+class RedBloodCell : public EnemyGameObject {
 public:
 	RedBloodCell(ParticleSystem* rbc, const ofMesh& mesh, const glm::vec3& position, float scale);
 	~RedBloodCell();
 	void update(float deltaTime) override;
 	void draw(ofShader* lightingShader) override;
+	void drawParticles();
 private:
 	ParticleSystem* ps;
 };
