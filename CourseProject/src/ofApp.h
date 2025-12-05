@@ -139,7 +139,7 @@ private:
 	unsigned short int veins_infected_count, marrow_infected_count;
 
 	// textures
-	ofImage texture, skyTexture, bloodstreamWallTexture, boneMarrowWallTexture;
+	ofImage texture, skyTexture, bloodstreamWallTexture, boneMarrowWallTexture, redBloodCellTexture;
 
 	// priority renders: light source, skybox, use texture flag
 	glm::vec3 light_pos;
