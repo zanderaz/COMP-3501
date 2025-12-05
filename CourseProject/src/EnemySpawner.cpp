@@ -58,7 +58,7 @@ void EnemySpawner::spawnEnemy() {
     rbc->setupRbcParticles();
     ofMesh mesh = ofMesh::sphere(25, 100);
     RedBloodCell* redBloodCell = new RedBloodCell(rbc, mesh, spawnPos, 1.0f);
-    redBloodCell->setRadius(15);
+    redBloodCell->setRadius(10);
 
     // Define wall positions
 
