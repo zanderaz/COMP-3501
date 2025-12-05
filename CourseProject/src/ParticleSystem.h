@@ -23,11 +23,17 @@ public:
 
     void update();
     void draw();
+
+    // setters
     void setPosition(const glm::vec3& position);
     inline void setOrientation(const glm::quat& q) { orientation = q; }
     void setParticleSize(float size);
     void setTime(float time);
     inline void setVisbility(bool tf) { visible = tf; }
+
+    // getters
+    inline const glm::vec3& getPosition(void) const { return position; }
+    inline const glm::quat& getOrientation(void) const { return orientation; }
 
 private:
 

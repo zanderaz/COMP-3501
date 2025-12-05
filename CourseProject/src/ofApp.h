@@ -57,7 +57,10 @@ public:
 	void spawnInfectedPS(const glm::vec3& position);
 	void createSpawnPortal(const glm::vec3& pos, const glm::quat& orientation);
 	void spawnEnemiesAfterInfect(InteractableObject* interact_obj);
-
+	RedBloodCell* createRedBloodCellEnemy(const glm::vec3& position, const glm::vec3& velocity);
+	glm::vec3 getPortalSpawnDirection(const glm::quat& portalOrientation);
+	void triggerSpawnPortalBurst(ParticleSystem* portalPs);
+	void updateSpawnPortalBursts(float deltaTime);
 
 	// collidable object creation
 	void createWalls();
@@ -84,6 +87,17 @@ public:
 
 private:
 
+	// enemy spawning from portal helper
+	struct PortalSpawnBurst {
+		ParticleSystem* portalPs;
+		std::vector<RedBloodCell*> enemies;
+		Timer despawnTimer;
+		Timer burstTimer;
+		int burstsSpawned;
+	};
+	ofMesh rbc_mesh;
+	void spawnPortalBurstEnemies(PortalSpawnBurst& burst); // gotta define this afterwards
+
 	// game object collections
 	PlayerGameObject* player;
 	vector<EnemyGameObject*> opposition_vec;
@@ -93,6 +107,7 @@ private:
 	vector<InteractableObject*> interactables_vec;
 	vector<ParticleSystem*> infection_ps_vec;
 	vector<ParticleSystem*> spawn_portal_ps_vec;
+	vector<PortalSpawnBurst> portal_spawn_bursts;
 
 	// mouse-look and camera related
 	MyCustomCamera cam;
@@ -199,6 +214,14 @@ private:
 
 	const float MUSIC_VOL = 0.2f;
 	const float SFX_VOL = 0.4f;
+
+	const float PORTAL_ENEMY_LIFETIME = 10.0f;
+	const float PORTAL_ENEMY_SPEED = 250.0f;
+	const float PORTAL_ENEMY_YAW_SPREAD = glm::radians(30.0f);
+	const float PORTAL_ENEMY_PITCH_SPREAD = glm::radians(30.0f);
+	const int PORTAL_ENEMY_COUNT = 6;
+	const int PORTAL_BURST_COUNT = 4;
+	const float PORTAL_BURST_INTERVAL = 1.5f;
 
 	const float BONE_SPIKE_MINIGAME_DURATION = 45.0f;
 
