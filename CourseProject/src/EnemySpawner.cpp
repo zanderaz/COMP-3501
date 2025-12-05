@@ -168,7 +168,7 @@ void EnemySpawner::spawnEnemy() {
 
     enemies.push_back(redBloodCell);
 
-    ofLog() << enemies.size();
+    //ofLog() << enemies.size();
 
     // restart timer for next spawn
     spawnTimer.Start(spawnInterval);
