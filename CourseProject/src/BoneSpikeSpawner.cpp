@@ -383,12 +383,9 @@ void BoneSpikeSpawner::checkPlayerCollision(PlayerGameObject* player) {
             float distance = glm::distance(playerPos, spike->getPosition());
             float combinedRadius = playerRadius + spike->getDamageRadius();
 
-            if (distance < combinedRadius && !player->getInvincibilityTimer().IsRunning()) {
-                player->getInvincibilityTimer().Start(1.0f);
-                player->setHealth(player->getHealth() - 1);
-
-                //ofLog() << "Player hit by bone spike! Health: " << player->getHealth();
-                break; // Only hit by one spike per frame
+            if (distance < combinedRadius) {
+                player->takeDamage();
+                break;
             }
         }
     }

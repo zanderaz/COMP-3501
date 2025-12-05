@@ -46,6 +46,7 @@ void ofApp::setup() {
 	power_up_mesh.setResolution(10);
 	empty_mesh.setRadius(0);
 	empty_mesh.setResolution(0);
+	rbc_mesh = ofMesh::sphere(25, 100);
 
 	// create the player
 	player = new PlayerGameObject(empty_mesh.getMesh(), glm::vec3(0), 1.0f, cam);
@@ -54,23 +55,12 @@ void ofApp::setup() {
 	light_pos = player->getPosition(); 
 	light_pos.y = LIGHT_HEIGHT;
 
-	// example objs (FOR TESTING PURPOSES, NOT USEFUL AT ALL RN)
-	/*
-	power_up_vec.push_back(new PowerUpObject(power_up_mesh.getMesh(), glm::vec3(200, 0, 0), 1.f));
-	power_up_vec.push_back(new PowerUpObject(power_up_mesh.getMesh(), glm::vec3(-200, 0, 0), 1.f));
-	power_up_vec.push_back(new PowerUpObject(power_up_mesh.getMesh(), glm::vec3(0, 200, 0), 1.f));
-	power_up_vec.push_back(new PowerUpObject(power_up_mesh.getMesh(), glm::vec3(0, -200, 0), 1.f));
-	power_up_vec.push_back(new PowerUpObject(power_up_mesh.getMesh(), glm::vec3(0, 0, 200), 1.f));
-	power_up_vec.push_back(new PowerUpObject(power_up_mesh.getMesh(), glm::vec3(0, 0, -200), 1.f));
-	*/
-
 	// setup red blood cell particle system
 	rbc = new ParticleSystem(player->getCamera(), 25);
 	rbc->loadShader("shader/rbcparticle.vert", "shader/rbcparticle.frag", "shader/rbcparticle.geom");
 	rbc->loadImage("images/redbloodcell.jpg");
 	rbc->setupRbcParticles();
-	ofMesh mesh = ofMesh::sphere(25, 100);
-	redBloodCell = new RedBloodCell(rbc, mesh, glm::vec3(20, 200, -20), 1.0f);
+	redBloodCell = new RedBloodCell(rbc, rbc_mesh, glm::vec3(20, 200, -20), 1.0f);
 
 	// setup SSE handler
 	screenSpaceEffect.setup(ofGetWidth(), ofGetHeight());
@@ -170,6 +160,16 @@ void ofApp::exit(void) {
 		delete ps;
 	}
 	infection_ps_vec.clear();
+
+	for (PortalSpawnBurst& burst : portal_spawn_bursts) {
+		for (RedBloodCell* enemy : burst.enemies) {
+			delete enemy;
+		}
+		if (burst.portalPs) {
+			burst.portalPs->setVisbility(false);
+		}
+	}
+	portal_spawn_bursts.clear();
 
 	for (ParticleSystem* ps : spawn_portal_ps_vec) {
 		delete ps;
@@ -275,6 +275,8 @@ void ofApp::update() {
 					}
 				}
 			}
+
+			updateSpawnPortalBursts(delta_time);
 
 			/*** CHECKPOINT HANDLING ***/
 
@@ -523,10 +525,18 @@ void ofApp::draw() {
 			wall->draw(lightingShader);
 		}
 
-		//redBloodCell->draw(lightingShader);
-
-		for (RedBloodCell* enemy: enemySpawner.getEnemies()) {
+		// red blood cells, will be using the same blood texture regardless of area
+		if (bUseTexture) {
+			lightingShader->setUniformTexture("tex0", bloodstreamWallTexture, 0);
+		}
+		for (RedBloodCell* enemy : enemySpawner.getEnemies()) {
 			enemy->draw(lightingShader);
+		}
+
+		for (PortalSpawnBurst& burst : portal_spawn_bursts) {
+			for (RedBloodCell* enemy : burst.enemies) {
+				enemy->draw(lightingShader);
+			}
 		}
 
 		lightingShader->end();
@@ -535,6 +545,12 @@ void ofApp::draw() {
 
 		for (RedBloodCell* enemy : enemySpawner.getEnemies()) {
 			enemy->drawParticles();
+		}
+
+		for (PortalSpawnBurst& burst : portal_spawn_bursts) {
+			for (RedBloodCell* enemy : burst.enemies) {
+				enemy->drawParticles();
+			}
 		}
 
 		for (ParticleSystem* ps : infection_ps_vec) {
@@ -1038,6 +1054,111 @@ void ofApp::spawnEnemiesAfterInfect(InteractableObject* interact_obj) {
 	// operations
 	if (sp_ps != nullptr) {
 		sp_ps->setVisbility(true);
+		triggerSpawnPortalBurst(sp_ps);
+	}
+}
+
+// helper method for making a red blood cell (particle system included)
+RedBloodCell* ofApp::createRedBloodCellEnemy(const glm::vec3& position, const glm::vec3& velocity) {
+
+	ParticleSystem* portal_rbc = new ParticleSystem(player->getCamera(), 25);
+	portal_rbc->loadShader("shader/rbcparticle.vert", "shader/rbcparticle.frag", "shader/rbcparticle.geom");
+	portal_rbc->loadImage("images/redbloodcell.jpg");
+	portal_rbc->setupRbcParticles();
+
+	RedBloodCell* new_enemy = new RedBloodCell(portal_rbc, rbc_mesh, position, 1.0f);
+	new_enemy->setRadius(15.0f);
+	new_enemy->setVelocity(velocity);
+
+	return new_enemy;
+}
+
+// from the spawn portal orientation, calculate enemy dir, add randomization
+glm::vec3 ofApp::getPortalSpawnDirection(const glm::quat& portalOrientation) {
+
+	glm::vec3 forward_dir = portalOrientation * glm::vec3(0.0f, 0.0f, -1.0f);
+
+	float yaw_jitter = ofRandom(-PORTAL_ENEMY_YAW_SPREAD, PORTAL_ENEMY_YAW_SPREAD);
+	float pitch_jitter = ofRandom(-PORTAL_ENEMY_PITCH_SPREAD, PORTAL_ENEMY_PITCH_SPREAD);
+
+	glm::quat jitter_rot = glm::angleAxis(yaw_jitter, glm::vec3(0, 1, 0)) * glm::angleAxis(pitch_jitter, glm::vec3(1, 0, 0));
+
+	return glm::normalize(jitter_rot * forward_dir);
+}
+
+// spawn enemies from a portal 
+void ofApp::spawnPortalBurstEnemies(PortalSpawnBurst& burst) {
+
+	if (!burst.portalPs) return;
+
+	glm::vec3 spawn_pos = burst.portalPs->getPosition();
+	glm::quat portal_orientation = burst.portalPs->getOrientation();
+
+	for (int i = 0; i < PORTAL_ENEMY_COUNT; ++i) {
+		glm::vec3 direction = getPortalSpawnDirection(portal_orientation);
+		glm::vec3 velocity = direction * PORTAL_ENEMY_SPEED;
+		burst.enemies.push_back(createRedBloodCellEnemy(spawn_pos, velocity));
+	}
+}
+
+// create portal spawn burst data type, create enemies, add to vec to be rendered and updated 
+void ofApp::triggerSpawnPortalBurst(ParticleSystem* portalPs) {
+
+	if (!portalPs) return;
+
+	PortalSpawnBurst burst{};
+	burst.portalPs = portalPs;
+	burst.despawnTimer.Start(PORTAL_ENEMY_LIFETIME);
+	burst.burstsSpawned = 0;
+
+	spawnPortalBurstEnemies(burst);
+	burst.burstsSpawned++;
+
+	if (burst.burstsSpawned < PORTAL_BURST_COUNT) {
+		burst.burstTimer.Start(PORTAL_BURST_INTERVAL);
+	}
+
+	portal_spawn_bursts.push_back(burst);
+
+}
+
+// update position for enemies spawned from a portal, check for player dmg and when to stop
+void ofApp::updateSpawnPortalBursts(float deltaTime) {
+
+	for (int i = portal_spawn_bursts.size() - 1; i >= 0; --i) {
+		PortalSpawnBurst& burst = portal_spawn_bursts[i];
+
+		if (burst.burstsSpawned < PORTAL_BURST_COUNT && burst.burstTimer.FinishedAndStop()) {
+			spawnPortalBurstEnemies(burst);
+			burst.burstsSpawned++;
+
+			if (burst.burstsSpawned < PORTAL_BURST_COUNT) {
+				burst.burstTimer.Start(PORTAL_BURST_INTERVAL);
+			}
+		}
+
+		for (int j = burst.enemies.size() - 1; j >= 0; --j) {
+			RedBloodCell* enemy = burst.enemies[j];
+			enemy->update(deltaTime);
+
+			glm::vec3 to_player = player->getPosition() - enemy->getPosition();
+			float combined_radius = player->getRadius() + enemy->getRadius();
+			if (glm::length2(to_player) <= combined_radius * combined_radius) {
+				player->takeDamage();
+				delete enemy;
+				burst.enemies.erase(burst.enemies.begin() + j);
+			}
+		}
+
+		if (burst.despawnTimer.FinishedAndStop()) {
+			burst.portalPs->setVisbility(false);
+
+			for (RedBloodCell* enemy : burst.enemies) {
+				delete enemy;
+			}
+
+			portal_spawn_bursts.erase(portal_spawn_bursts.begin() + i);
+		}
 	}
 }
 
