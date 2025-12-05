@@ -475,9 +475,12 @@ void ofApp::draw() {
 		lightingShader->setUniform3f("objectColor", glm::vec3(1.0, 0.9, 0.2));
 		lightingShader->setUniform1i("isLight", true);
 		lightingShader->setUniform3f("emissionColor", glm::vec3(1, 1, 0.4));
+		lightingShader->setUniform1i("useTexture", 0);
 		lightSphere.draw();
+		if (bUseTexture) lightingShader->setUniform1i("useTexture", 1);
 
-		// start drawing game objects
+		/**/
+		//start drawing game objects
 		player->draw(lightingShader);
 		for (int i = 0; i < opposition_vec.size(); ++i) {
 			opposition_vec[i]->draw(lightingShader);
@@ -486,8 +489,9 @@ void ofApp::draw() {
 		if (boneMarrow && boneSpikeMinigameActive) {
 			boneSpikeSpawner.draw(lightingShader);
 
-			/*
+			
 			// Draw minigame timer in HUD
+			/*
 			if (boneSpikeSpawner.isActive()) {
 				float timeLeft = BONE_SPIKE_MINIGAME_DURATION - boneSpikeSpawner.getMinigameTimer().getElapsed();
 				if (timeLeft < 0) timeLeft = 0;
@@ -501,9 +505,13 @@ void ofApp::draw() {
 		for (int i = 0; i < power_up_vec.size(); ++i) {
 			power_up_vec[i]->draw(lightingShader);
 		}
+
+		lightingShader->setUniform1i("useTexture", 0);
 		for (int i = 0; i < checkpoint_vec.size(); ++i) {
 			checkpoint_vec[i]->draw(lightingShader);
 		}
+		if (bUseTexture) lightingShader->setUniform1i("useTexture", 1);
+
 
 		// interactable drawing, no texture
 		lightingShader->setUniform1i("useTexture", 0);
@@ -524,6 +532,9 @@ void ofApp::draw() {
 		}
 
 		//redBloodCell->draw(lightingShader);
+		if (bUseTexture) {
+			lightingShader->setUniformTexture("tex0", redBloodCellTexture, 0);
+		}
 
 		for (RedBloodCell* enemy: enemySpawner.getEnemies()) {
 			enemy->draw(lightingShader);
@@ -906,6 +917,7 @@ void ofApp::setupTextures() {
 	skyTexture.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
 	bloodstreamWallTexture.load("images/bloodold.jpeg");
 	boneMarrowWallTexture.load("images/bonemarrow.jpg");
+	redBloodCellTexture.load("images/rbctexture.jpg");
 }
 
 void ofApp::setupTextElements() {
@@ -983,7 +995,7 @@ void ofApp::handleCheckpointCollision(CheckpointGameObject* checkpoint) {
 		player->setPosition(checkpoint->getTeleportPosition());
 		bloodstream = false;
 		boneMarrow = true;
-		skyTexture.load("images/DOG.png");
+		skyTexture.load("images/bonemarrowskyboxtexture.jpeg");
 		checkpoint_teleport.play();
 
 		ofLog() << "Teleported to Bone Marrow environment";
