@@ -17,6 +17,7 @@
 #include "EnemySpawner.h"
 #include "BoneSpikeGameObject.h"
 #include "BoneSpikeSpawner.h"
+#include "InteractableObject.h"
 
 class ofApp : public ofBaseApp {
 
@@ -54,6 +55,8 @@ public:
 	void recenterCursorToWindowCenter(void);
 	void handleCheckpointCollision(CheckpointGameObject* checkpoint);
 	void spawnInfectedPS(const glm::vec3& position);
+	void createSpawnPortal(const glm::vec3& pos, const glm::quat& orientation);
+	void spawnEnemiesAfterInfect(InteractableObject* interact_obj);
 
 
 	// collidable object creation
@@ -66,6 +69,7 @@ public:
 	void createWallsSection4();
 	void createVeins();
 	void createBloodStreamLookout();
+	void createBloodSpawnPortals();
 	void startBloodBulletHell(float duration = 30.0f);
 	void endBloodBulletHell();
 	void updateBulletHellWall();
@@ -78,7 +82,6 @@ public:
 	void createWallsSection7();
 	void createBoneMarrowLookout();
 
-
 private:
 
 	// game object collections
@@ -87,7 +90,7 @@ private:
 	vector<CheckpointGameObject*> checkpoint_vec;
 	vector<PowerUpObject*> power_up_vec;
 	vector<GameObject*> wall_objects_vec;
-	vector<GameObject*> interactables_vec;
+	vector<InteractableObject*> interactables_vec;
 	vector<ParticleSystem*> infection_ps_vec;
 	vector<ParticleSystem*> spawn_portal_ps_vec;
 
@@ -126,6 +129,7 @@ private:
 	ofTrueTypeFont menu_title_font;
 	ofTrueTypeFont menu_caption_font;
 	ofTrueTypeFont game_over_font;
+	ofTrueTypeFont hud_font;
 
 	ofRectangle start_button_rect;
 	ofRectangle quit_button_rect;

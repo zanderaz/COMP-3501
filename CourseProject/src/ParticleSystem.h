@@ -24,8 +24,10 @@ public:
     void update();
     void draw();
     void setPosition(const glm::vec3& position);
+    inline void setOrientation(const glm::quat& q) { orientation = q; }
     void setParticleSize(float size);
     void setTime(float time);
+    inline void setVisbility(bool tf) { visible = tf; }
 
 private:
 
@@ -48,8 +50,10 @@ private:
     float currentTime;
     int particleCount;
     glm::vec3 position;
+    glm::quat orientation;
 
     float startTime;
+    bool visible;
 };
 
 #endif
