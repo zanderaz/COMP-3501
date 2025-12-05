@@ -21,6 +21,7 @@ void ofApp::setup() {
 	veins_infected_count = 0;
 	marrow_infected_count = 0;
 	game_state = 0; // start on main menu
+	gameStarted = false;
 
 	// helpers for all shaders and textures
 	setupShaders();
@@ -203,6 +204,11 @@ void ofApp::update() {
 
 	// -------------------- GAMEPLAY GAME STATE ---------------------------
 	else if (game_state == 1) {
+
+		if (!gameStarted) {
+			textBox.showTemporarily(5.0f);
+			gameStarted = true;
+		}
 
 		// check for game over beforehand
 		if (player->getHealth() <= 0) {
@@ -682,7 +688,7 @@ void ofApp::keyPressed(int key) {
 								room_event_start.play();
 
 								// Display message
-								textBox.setup("Survive for the incoming spikes for 45 seconds!", &dialog_font, 500.0f);
+								textBox.setup("Survive the incoming spikes for 45 seconds!", &dialog_font, 500.0f);
 								textBox.setSize(500, 120);
 								textBox.showTemporarily(5.0f);
 							}
@@ -852,7 +858,7 @@ void ofApp::mouseExited(int x, int y) {
 //--------------------------------------------------------------
 void ofApp::windowResized(int w, int h) {
 	screenSpaceEffect.setResolution(w, h);
-	textBox.setPosition((ofGetWidth() / 2.0f) - 250, ofGetHeight() - 200);
+	textBox.setPosition((ofGetWidth() / 2.0f) - 250, ofGetHeight() - 250);
 }
 
 
@@ -955,7 +961,7 @@ void ofApp::setupTextElements() {
 	textBox.setBackgroundColor(ofColor(0, 0, 0, 220));
 	textBox.setTextColor(ofColor(255, 255, 0));
 	textBox.setBorderColor(ofColor(255, 255, 255));
-	textBox.setPosition((ofGetWidth() / 2.0f) - 250, ofGetHeight() - 150);
+	textBox.setPosition((ofGetWidth() / 2.0f) - 250, ofGetHeight() - 250);
 	textBox.setBorderWidth(3.0f);
 	showTextBox = false;
 }
@@ -1766,6 +1772,9 @@ void ofApp::startBloodBulletHell(float duration) {
 	bloodBulletHellTimer.Start(duration);
 	enemySpawner.startSpawning(0.25f);
 	room_event_start.play();
+	textBox.setup("Survive the incoming red blood cells for 30 seconds!", &dialog_font, 525.0f);
+	textBox.setSize(525, 120);
+	textBox.showTemporarily(5.0f);
 	//ofLog() << "Bullet Hell Start";
 }
 

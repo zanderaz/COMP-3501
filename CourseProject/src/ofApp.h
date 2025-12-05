@@ -198,6 +198,8 @@ private:
 	// game over timer
 	Timer gameOverTimer;
 
+	bool gameStarted;
+
 	// ----------------- Constants -----------------
 	const unsigned short int GAME_FPS = 144;
 
