@@ -12,6 +12,9 @@ ParticleSystem::ParticleSystem(MyCustomCamera& camera, int num_particles)
     ofDisableArbTex(); // may not do anything, here for compatibility
 
     particleNode.setPosition(glm::vec3(0, 0, 0));
+    orientation = glm::quat(1, 0, 0, 0); // initialize to identity quat
+
+    visible = true;
 }
 
 // load particle shader based on shader filepaths
@@ -100,31 +103,35 @@ void ParticleSystem::update() {
 
 void ParticleSystem::draw() {
 
-    ofEnableBlendMode(OF_BLENDMODE_ADD);
-    glDepthMask(GL_FALSE); // dont write to depth buffer (still read)
+    if (visible) {
 
-    ofPushMatrix();
+        ofEnableBlendMode(OF_BLENDMODE_ADD);
+        glDepthMask(GL_FALSE); // dont write to depth buffer (still read)
 
-    particleNode.setPosition(position);
+        particleNode.setPosition(position);
+        particleNode.setOrientation(orientation);
 
-    shader.begin();
+        ofPushMatrix();
+        shader.begin();
 
-    shader.setUniform1f("pSize", particleSize); // particle point size
-    shader.setUniform1f("t", currentTime); // time
-    shader.setUniformTexture("texture0", particle_image.getTexture(), 1);
+        shader.setUniform1f("pSize", particleSize); // particle point size
+        shader.setUniform1f("t", currentTime); // time
+        shader.setUniformTexture("texture0", particle_image.getTexture(), 1);
 
-    ofMatrix4x4 modelMatrix = particleNode.getGlobalTransformMatrix();
-    ofMatrix4x4 viewProjMatrix = cam.getModelViewProjectionMatrix();
-    ofMatrix4x4 mvp = modelMatrix * viewProjMatrix;
-    shader.setUniformMatrix4f("MVP", mvp);
+        ofMatrix4x4 modelMatrix = particleNode.getGlobalTransformMatrix();
+        ofMatrix4x4 viewProjMatrix = cam.getModelViewProjectionMatrix();
+        ofMatrix4x4 mvp = modelMatrix * viewProjMatrix;
+        shader.setUniformMatrix4f("MVP", mvp);
 
-    vbo.draw(GL_POINTS, 0, positions.size());
-    
-    shader.end();
-    ofPopMatrix();
+        vbo.draw(GL_POINTS, 0, positions.size());
 
-    glDepthMask(GL_TRUE); // turn back on depth writing
-    ofEnableAlphaBlending();
+        shader.end();
+        ofPopMatrix();
+
+        glDepthMask(GL_TRUE); // turn back on depth writing
+        ofDisableBlendMode();
+
+    }
 
 }
 
@@ -152,9 +159,10 @@ glm::vec3 ParticleSystem::sphere_sample(float rad) {
     return p;
 }
 
+// for spawn portals
 glm::vec3 ParticleSystem::auraRingSample(float rad) {
-    float angle = ofRandom(0, TWO_PI); // random angle
-    float x = rad * cos(angle); // using radius of the enemy sphere
-    float z = rad * sin(angle);
-    return glm::vec3(x, 0.0f, z);
+    float angle = ofRandom(0, TWO_PI);
+    float x = rad * cos(angle);
+    float y = rad * sin(angle);
+    return glm::vec3(x, y, 0.0f);
 }
