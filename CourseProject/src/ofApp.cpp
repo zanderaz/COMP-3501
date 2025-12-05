@@ -72,16 +72,6 @@ void ofApp::setup() {
 	ofMesh mesh = ofMesh::sphere(25, 100);
 	redBloodCell = new RedBloodCell(rbc, mesh, glm::vec3(20, 200, -20), 1.0f);
 
-	// TEST CODE FOR SPAWN PORTAL ONLY, NUKE LATER
-	/*
-	ParticleSystem* sp = new ParticleSystem(player->getCamera(), 250);
-	sp->loadShader("shader/portal_particle.vert", "shader/portal_particle.frag", "shader/portal_particle.geom");
-	sp->loadImage("images/smoketex.png");
-	sp->setupSpawnPortalParticles();
-	sp->setPosition(glm::vec3(0, 200, -100));
-	spawn_portal_ps_vec.push_back(sp);
-	*/
-
 	// setup SSE handler
 	screenSpaceEffect.setup(ofGetWidth(), ofGetHeight());
 
@@ -113,6 +103,9 @@ void ofApp::setup() {
 	boneSpikeMinigameActive = false;
 	isBoneMarrowComplete = false;
 	boneSpikeSpawner.setup(player);
+
+	// spawn portals
+	createBloodSpawnPortals();
 
 	// play main menu music
 	menu_music.play();
@@ -168,7 +161,7 @@ void ofApp::exit(void) {
 	}
 	wall_objects_vec.clear();
 
-	for (GameObject* obj : interactables_vec) {
+	for (InteractableObject* obj : interactables_vec) {
 		delete obj;
 	}
 	interactables_vec.clear();
@@ -306,7 +299,7 @@ void ofApp::update() {
 
 			// check if player is in interact range
 			bool player_in_range = false;
-			for (GameObject* interact_obj : interactables_vec) {
+			for (InteractableObject* interact_obj : interactables_vec) {
 				if (glm::distance(interact_obj->getPosition(), player->getPosition()) < INTERACT_RANGE) {
 					player_in_range = true;
 				}
@@ -522,7 +515,7 @@ void ofApp::draw() {
 
 		// interactable drawing, no texture
 		lightingShader->setUniform1i("useTexture", 0);
-		for (GameObject* interact_obj : interactables_vec) {
+		for (InteractableObject* interact_obj : interactables_vec) {
 			interact_obj->draw(lightingShader);
 		}
 		if (bUseTexture) lightingShader->setUniform1i("useTexture", 1);
@@ -569,7 +562,11 @@ void ofApp::draw() {
 		screenSpaceEffect.draw();
 
 		// HUD elements
+
 		textBox.draw();
+		ofSetColor(255);
+
+		// press F to interact tip
 		if (show_interact_tip) {
 			float center_x = ofGetWidth() / 2.0f;
 			float center_y = ofGetHeight() / 2.0f;
@@ -578,16 +575,38 @@ void ofApp::draw() {
 			float caption_y = center_y + 200;
 			dialog_font.drawString(INTERACT_TEXT, caption_x, caption_y);
 		}
+
+		float padding = 30.0f;
+
+		// health
+		string healthStr = "Health: " + std::to_string(player->getHealth());
+		float healthX = padding;
+		float healthY = ofGetHeight() - padding;
+		hud_font.drawString(healthStr, healthX, healthY);
+
+		// speed boost
+		string speedStr;
+		if (player->isSpeedBoostReady()) speedStr = "Speed Boost: Ready!";
+		else speedStr = "Speed Boost: On Cooldown.";
+		float speedX = padding;
+		float speedY = ofGetHeight() - (padding * 2);
+		hud_font.drawString(speedStr, speedX, speedY);
+
+		// veins/marrow infected
+		string infectionStr = "";
+		if (bloodstream) infectionStr = "Veins Infected: " + std::to_string(veins_infected_count) + " / 4";
+		else if (boneMarrow) infectionStr = "Marrow Infected: " + std::to_string(marrow_infected_count) + " / 9";
+		ofRectangle bounds = hud_font.getStringBoundingBox(infectionStr, 0, 0);
+		float infectX = ofGetWidth() - bounds.width - padding;
+		float infectY = ofGetHeight() - padding;
+		hud_font.drawString(infectionStr, infectX, infectY);
 		
 		// DEBUG: minecraft f3 menu with developer info
-		ofSetColor(255);
 		ofDrawBitmapString("FPS: " + to_string(ofGetFrameRate()), glm::vec2(30, 30));
 		ofDrawBitmapString("X-pos: " + to_string(player->getPosition().x), glm::vec2(30, 50));
 		ofDrawBitmapString("Y-pos: " + to_string(player->getPosition().y), glm::vec2(30, 60));
 		ofDrawBitmapString("Z-pos: " + to_string(player->getPosition().z), glm::vec2(30, 70));
-		ofDrawBitmapString("Health: " + to_string(player->getHealth()), glm::vec2(30, 90));
-		if (bloodstream) ofDrawBitmapString("Veins Infected: " + to_string(veins_infected_count) + " / 4", glm::vec2(30, 110));
-		else if (boneMarrow) ofDrawBitmapString("Marrow Infected: " + to_string(marrow_infected_count) + " / 9", glm::vec2(30, 110));
+
 	}
 
 	// -------------------- GAME OVER GAME STATE ---------------------------
@@ -631,12 +650,13 @@ void ofApp::keyPressed(int key) {
 				// check which interactable needs to get infected and removed
 				for (int i = 0; i < interactables_vec.size(); ++i) {
 					if (glm::distance(interactables_vec[i]->getPosition(), player->getPosition()) < INTERACT_RANGE) {
-						GameObject* interactable = interactables_vec[i]; // found vein to infect
+						InteractableObject* interactable = interactables_vec[i]; // found vein to infect
 						
 						if (bloodstream) {
 							veins_infected_count++;
 							updateBulletHellWall();
 						}
+
 						else if (boneMarrow) {
 							marrow_infected_count++;
 							updateBoneMarrowBlockingWalls();
@@ -653,8 +673,11 @@ void ofApp::keyPressed(int key) {
 								textBox.showTemporarily(5.0f);
 							}
 						}
+
 						infect_sound.play();
 						spawnInfectedPS(interactable->getPosition());
+
+						spawnEnemiesAfterInfect(interactable);
 
 						interactables_vec.erase(interactables_vec.begin() + i);
 						delete interactable;
@@ -906,6 +929,7 @@ void ofApp::setupTextElements() {
 		game_over_font.load("fonts/ArialMedium.ttf", 72);
 		menu_texture.load("images/menu_bg.png");
 		dialog_font.load("fonts/ArialMedium.ttf", 24);
+		hud_font.load("fonts/ArialMedium.ttf", 20);
 	}
 	catch (...) {
 		ofLogError() << "Text elements could not be loaded. Please check bin/data/fonts and bin/data/images.";
@@ -989,10 +1013,49 @@ void ofApp::spawnInfectedPS(const glm::vec3& position) {
 	infected_ps->setupInfectionParticles();
 	infected_ps->setPosition(position);
 	infection_ps_vec.push_back(infected_ps);
+
+}
+
+// creates an invisible spawn portal at a given position and orientation, adds to spawn_portal_ps_vec
+void ofApp::createSpawnPortal(const glm::vec3& pos, const glm::quat& orientation) {
+
+	ParticleSystem* new_sp_ps = new ParticleSystem(player->getCamera(), 250);
+	new_sp_ps->loadShader("shader/portal_particle.vert", "shader/portal_particle.frag", "shader/portal_particle.geom");
+	new_sp_ps->loadImage("images/smoketex.png");
+	new_sp_ps->setupSpawnPortalParticles();
+	new_sp_ps->setPosition(pos);
+	new_sp_ps->setOrientation(orientation);
+	new_sp_ps->setVisbility(false);
+	spawn_portal_ps_vec.push_back(new_sp_ps);
+
+}
+
+// find out which portal to spawn, make it visible, spawn enemies out of it
+void ofApp::spawnEnemiesAfterInfect(InteractableObject* interact_obj) {
+	
+	// early exit for final room spawning infects
+	if (bloodstream && veins_infected_count >= 4) return;
+	if (boneMarrow && marrow_infected_count >= 9) return;
+
+	ParticleSystem* sp_ps = nullptr;
+
+	// find portal, ensure we don't go OOB
+	try {
+		sp_ps = spawn_portal_ps_vec[interact_obj->getSpawnPortalIndex()];
+	}
+	catch (...) {
+		ofLog() << "Spawn Portal Logic had an index go out of bounds, go investigate!!";
+	}
+	
+	// operations
+	if (sp_ps != nullptr) {
+		sp_ps->setVisbility(true);
+	}
 }
 
 // create walls for the play area, as well as any other collidable objects 
 void ofApp::createWalls() {
+
 	// bloodstream
 	createWallsSection1();
 	createWallsSection2();
@@ -1383,7 +1446,7 @@ void ofApp::createVeins(void) {
 
 // helper function to create interactable objects on the veins and bone marrow
 void ofApp::setupInteractableObjects() {
-	// setup the interactable objects
+
 	// bloodstream
 	glm::vec3 infect1_pos(600, 50, 130);
 	glm::vec3 infect2_pos(-830, 70, 1350);
@@ -1403,56 +1466,56 @@ void ofApp::setupInteractableObjects() {
 
 
 	// bloodstream interactables
-	GameObject* interact_obj1 = new GameObject(power_up_mesh.getMesh(), infect1_pos, 1.f);
+	InteractableObject* interact_obj1 = new InteractableObject(power_up_mesh.getMesh(), infect1_pos, 1.f, 0);
 	interact_obj1->setColour(glm::vec3(1.0f, 0.9f, 0.4f));
 	interactables_vec.push_back(interact_obj1);
 
-	GameObject* interact_obj2 = new GameObject(power_up_mesh.getMesh(), infect2_pos, 1.f);
+	InteractableObject* interact_obj2 = new InteractableObject(power_up_mesh.getMesh(), infect2_pos, 1.f, 1);
 	interact_obj2->setColour(glm::vec3(1.0f, 0.9f, 0.4f));
 	interactables_vec.push_back(interact_obj2);
 
-	GameObject* interact_obj3 = new GameObject(power_up_mesh.getMesh(), infect3_pos, 1.f);
+	InteractableObject* interact_obj3 = new InteractableObject(power_up_mesh.getMesh(), infect3_pos, 1.f, 2);
 	interact_obj3->setColour(glm::vec3(1.0f, 0.9f, 0.4f));
 	interactables_vec.push_back(interact_obj3);
 
-	GameObject* interact_obj4 = new GameObject(power_up_mesh.getMesh(), infect4_pos, 1.f);
+	InteractableObject* interact_obj4 = new InteractableObject(power_up_mesh.getMesh(), infect4_pos, 1.f, -1); // starts bullet hell
 	interact_obj4->setColour(glm::vec3(1.0f, 0.9f, 0.4f));
 	interactables_vec.push_back(interact_obj4);
 
 	// bone marrow interactables
-	GameObject* interact_obj5 = new GameObject(power_up_mesh.getMesh(), infect5_pos, 1.f);
+	InteractableObject* interact_obj5 = new InteractableObject(power_up_mesh.getMesh(), infect5_pos, 1.f, 3);
 	interact_obj5->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
 	interactables_vec.push_back(interact_obj5);
 
-	GameObject* interact_obj6 = new GameObject(power_up_mesh.getMesh(), infect6_pos, 1.f);
+	InteractableObject* interact_obj6 = new InteractableObject(power_up_mesh.getMesh(), infect6_pos, 1.f, 4);
 	interact_obj6->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
 	interactables_vec.push_back(interact_obj6);
 
-	GameObject* interact_obj7 = new GameObject(power_up_mesh.getMesh(), infect7_pos, 1.f);
+	InteractableObject* interact_obj7 = new InteractableObject(power_up_mesh.getMesh(), infect7_pos, 1.f, 5);
 	interact_obj7->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
 	interactables_vec.push_back(interact_obj7);
 
-	GameObject* interact_obj8 = new GameObject(power_up_mesh.getMesh(), infect8_pos, 1.f);
+	InteractableObject* interact_obj8 = new InteractableObject(power_up_mesh.getMesh(), infect8_pos, 1.f, 6);
 	interact_obj8->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
 	interactables_vec.push_back(interact_obj8);
 
-	GameObject* interact_obj9 = new GameObject(power_up_mesh.getMesh(), infect9_pos, 1.f);
+	InteractableObject* interact_obj9 = new InteractableObject(power_up_mesh.getMesh(), infect9_pos, 1.f, 7);
 	interact_obj9->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
 	interactables_vec.push_back(interact_obj9);
 
-	GameObject* interact_obj10 = new GameObject(power_up_mesh.getMesh(), infect10_pos, 1.f);
+	InteractableObject* interact_obj10 = new InteractableObject(power_up_mesh.getMesh(), infect10_pos, 1.f, 8);
 	interact_obj10->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
 	interactables_vec.push_back(interact_obj10);
 
-	GameObject* interact_obj11 = new GameObject(power_up_mesh.getMesh(), infect11_pos, 1.f);
+	InteractableObject* interact_obj11 = new InteractableObject(power_up_mesh.getMesh(), infect11_pos, 1.f, 9);
 	interact_obj11->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
 	interactables_vec.push_back(interact_obj11);
 
-	GameObject* interact_obj12 = new GameObject(power_up_mesh.getMesh(), infect12_pos, 1.f);
+	InteractableObject* interact_obj12 = new InteractableObject(power_up_mesh.getMesh(), infect12_pos, 1.f, 10);
 	interact_obj12->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
 	interactables_vec.push_back(interact_obj12);
 
-	GameObject* interact_obj13 = new GameObject(power_up_mesh.getMesh(), infect13_pos, 1.f);
+	InteractableObject* interact_obj13 = new InteractableObject(power_up_mesh.getMesh(), infect13_pos, 1.f, -1); // starts bone minigame
 	interact_obj13->setColour(glm::vec3(1.0f, 0.3f, 0.2f));
 	interactables_vec.push_back(interact_obj13);
 }
@@ -1513,6 +1576,68 @@ void ofApp::createBloodStreamLookout() {
 	GameObject* invis_right = new GameObject(reused_mesh.getMesh(), glm::vec3(-1950, 500, -325), 1.0f);
 	invis_right->setVisible(false);
 	wall_objects_vec.push_back(invis_right);
+
+}
+
+// initialize the enemy spawn portals for the blood stream
+void ofApp::createBloodSpawnPortals() {
+	glm::vec3 reused_pos;
+	glm::quat reused_quat;
+
+	// vein 1
+	reused_pos = glm::vec3(400, 80, 750);
+	reused_quat = glm::angleAxis(glm::radians(-20.0f), glm::vec3(0, 1, 0));
+	createSpawnPortal(reused_pos, reused_quat);
+
+	// vein 2
+	reused_pos = glm::vec3(-1400, 100, 1175);
+	reused_quat = glm::angleAxis(glm::radians(-110.0f), glm::vec3(0, 1, 0));
+	createSpawnPortal(reused_pos, reused_quat);
+
+	// vein 3
+	reused_pos = glm::vec3(-2250, 120, 1080);
+	reused_quat = glm::angleAxis(glm::radians(0.0f), glm::vec3(0, 1, 0));
+	createSpawnPortal(reused_pos, reused_quat);
+
+	// marrow 1
+	reused_pos = glm::vec3(13175, 100, 290);
+	reused_quat = glm::angleAxis(glm::radians(180.0f), glm::vec3(0, 1, 0));
+	createSpawnPortal(reused_pos, reused_quat);
+
+	// marrow 2
+	reused_pos = glm::vec3(13330, 80, 1450);
+	reused_quat = glm::angleAxis(glm::radians(0.0f), glm::vec3(0, 1, 0));
+	createSpawnPortal(reused_pos, reused_quat);
+
+	// marrow 3
+	reused_pos = glm::vec3(13540, 120, 1400);
+	reused_quat = glm::angleAxis(glm::radians(20.0f), glm::vec3(0, 1, 0));
+	createSpawnPortal(reused_pos, reused_quat);
+
+	// marrow 4
+	reused_pos = glm::vec3(13175, 120, 600);
+	reused_quat = glm::angleAxis(glm::radians(0.0f), glm::vec3(0, 1, 0));
+	createSpawnPortal(reused_pos, reused_quat);
+
+	// marrow 5
+	reused_pos = glm::vec3(11600, 90, -100);
+	reused_quat = glm::angleAxis(glm::radians(80.0f), glm::vec3(0, 1, 0));
+	createSpawnPortal(reused_pos, reused_quat);
+
+	// marrow 6
+	reused_pos = glm::vec3(10730, 120, -40);
+	reused_quat = glm::angleAxis(glm::radians(-80.0f), glm::vec3(0, 1, 0));
+	createSpawnPortal(reused_pos, reused_quat);
+
+	// marrow 7
+	reused_pos = glm::vec3(12220, 100, 350);
+	reused_quat = glm::angleAxis(glm::radians(-135.0f), glm::vec3(0, 1, 0));
+	createSpawnPortal(reused_pos, reused_quat);
+
+	// marrow 8
+	reused_pos = glm::vec3(11500, 110, -275);
+	reused_quat = glm::angleAxis(glm::radians(-150.0f), glm::vec3(0, 1, 0));
+	createSpawnPortal(reused_pos, reused_quat);
 
 }
 
