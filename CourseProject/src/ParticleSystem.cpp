@@ -103,9 +103,10 @@ void ParticleSystem::draw() {
     ofEnableBlendMode(OF_BLENDMODE_ADD);
     glDepthMask(GL_FALSE); // dont write to depth buffer (still read)
 
+    ofPushMatrix();
+
     particleNode.setPosition(position);
 
-    ofPushMatrix();
     shader.begin();
 
     shader.setUniform1f("pSize", particleSize); // particle point size
@@ -123,7 +124,7 @@ void ParticleSystem::draw() {
     ofPopMatrix();
 
     glDepthMask(GL_TRUE); // turn back on depth writing
-    ofDisableBlendMode();
+    ofEnableAlphaBlending();
 
 }
 

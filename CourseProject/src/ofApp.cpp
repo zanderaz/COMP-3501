@@ -103,6 +103,7 @@ void ofApp::setup() {
 	// bullet hell spawn stuff
 	bulletHellEnemyMesh.set(30, 100);
 	enemySpawner.setup(&bulletHellEnemyMesh.getMesh());
+	enemySpawner.setPlayer(player);
 	bloodBulletHellActive = false;
 	isBulletHellComplete = false;
 
@@ -487,9 +488,6 @@ void ofApp::draw() {
 			opposition_vec[i]->draw(lightingShader);
 		}
 
-		// keep order like this bc its kinda odd
-		enemySpawner.draw(lightingShader);
-
 		if (boneMarrow && boneSpikeMinigameActive) {
 			boneSpikeSpawner.draw(lightingShader);
 
@@ -530,16 +528,26 @@ void ofApp::draw() {
 			wall->draw(lightingShader);
 		}
 
-		// draw particle system related objects
-		redBloodCell->draw(lightingShader);
+		//redBloodCell->draw(lightingShader);
+
+		for (RedBloodCell* enemy: enemySpawner.getEnemies()) {
+			enemy->draw(lightingShader);
+		}
+
+		lightingShader->end();
+
+		// draw all particles outside of lighting shader as to not corrupt the shader
+
+		for (RedBloodCell* enemy : enemySpawner.getEnemies()) {
+			enemy->drawParticles();
+		}
+
 		for (ParticleSystem* ps : infection_ps_vec) {
 			ps->draw();
 		}
 		for (ParticleSystem* sp_ps : spawn_portal_ps_vec) {
 			sp_ps->draw();
 		}
-
-		lightingShader->end();
 
 		player->getCamera().end();
 		ofDisableDepthTest();

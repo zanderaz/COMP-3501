@@ -1,10 +1,12 @@
 #include "redBloodCell.h"
 
 RedBloodCell::RedBloodCell(ParticleSystem* rbc, const ofMesh& mesh, const glm::vec3& position, float scale)
-	: GameObject(mesh, position, scale) {
+	: EnemyGameObject(mesh, position, scale) {
 
 	colour = glm::vec3(1.0f, 0.1f, 0.2f);
 	this->ps = rbc;
+
+	setRadius(25.0f);
 
 }
 
@@ -13,12 +15,12 @@ RedBloodCell::~RedBloodCell() {
 }
 
 void RedBloodCell::update(float deltaTime) {
+	EnemyGameObject::update(deltaTime);
 	ps->setPosition(this->getPosition());
 	ps->update();
 }
 
 void RedBloodCell::draw(ofShader* lightingShader) {
-
 	glm::mat4 worldWithScale = this->getWorldMatrix();
 	worldWithScale = glm::scale(worldWithScale, glm::vec3(0.8f, 0.4f, 1.0f));
 	lightingShader->setUniformMatrix4f("worldMatrix", worldWithScale);
@@ -28,6 +30,10 @@ void RedBloodCell::draw(ofShader* lightingShader) {
 
 	ofPushMatrix();
 	mesh.draw();
-	ps->draw();
+	//ps->draw();
 	ofPopMatrix();
+}
+
+void RedBloodCell::drawParticles() {
+	ps->draw();
 }
