@@ -62,9 +62,10 @@ public:
 	void createSpawnPortal(const glm::vec3& pos, const glm::quat& orientation);
 	void spawnEnemiesAfterInfect(InteractableObject* interact_obj);
 	RedBloodCell* createRedBloodCellEnemy(const glm::vec3& position, const glm::vec3& velocity);
-	glm::vec3 getPortalSpawnDirection(const glm::quat& portalOrientation);
+	glm::vec3 getPortalSpawnDirection(const glm::quat& portalOrientation) const;
 	void triggerSpawnPortalBurst(ParticleSystem* portalPs);
 	void updateSpawnPortalBursts(float deltaTime);
+	ofMesh createBoneMesh(float radius, float height);
 
 	// collidable object creation
 	void createWalls();
@@ -89,6 +90,7 @@ public:
 	void createWallsSection6();
 	void createWallsSection7();
 	void createBoneMarrowLookout();
+	void createBoneMarrowScenery();
 
 private:
 
@@ -115,6 +117,7 @@ private:
 	vector<PortalSpawnBurst> portal_spawn_bursts;
 	vector<BloodStreamCylinderCollection*> cylinder_collections_vec;
 	vector<LSystem*> lsys;
+	vector<GameObject*> bone_marrow_scenery;
 
 	// mouse-look and camera related
 	MyCustomCamera cam;
@@ -141,6 +144,9 @@ private:
 	ofSpherePrimitive power_up_mesh;
 	ofSpherePrimitive empty_mesh;
 	ofSpherePrimitive bulletHellEnemyMesh;
+	ofMesh large_tall_bone;
+	ofMesh large_wide_bone;
+	ofMesh small_bone;
 
 	// shader
 	ofShader* lightingShader;
@@ -167,6 +173,7 @@ private:
 	// textures
 	ofImage texture, skyTexture, bloodstreamWallTexture, boneMarrowWallTexture, redBloodCellTexture;
 	ofImage l_sys_tex;
+	ofImage bone_tex;
 
 	// priority renders: light source, skybox, use texture flag
 	glm::vec3 light_pos;
@@ -223,9 +230,9 @@ private:
 	// interacting thru a wall is an intended speedrun strat (we are not lazy)
 	const float INTERACT_RANGE = 150.0f;
 
-	const float LIGHT_HEIGHT = 620.0f;
+	const float LIGHT_HEIGHT = 900.0f;
 	const float LIGHT_ORBIT_RADIUS = 4000.0f;
-	const float LIGHT_ORBIT_SPEED = 0.314159f;
+	const float LIGHT_ORBIT_SPEED = 0.25f;
 	const glm::vec3 BLOODSTREAM_GROUND_CENTER = glm::vec3(-1850.0f, -50.0f, -100.0f);
 	const glm::vec3 BONE_MARROW_GROUND_CENTER = glm::vec3(13000.0f, -50.0f, -500.0f);
 
@@ -244,5 +251,9 @@ private:
 	const float LSYS_CULL_DIST_SQ = LSYS_CULL_DIST * LSYS_CULL_DIST;
 
 	const float BONE_SPIKE_MINIGAME_DURATION = 45.0f;
+
+	const bool CREATE_CEILING = false;
+	// removing the ceiling helps with placing geometry into the game world
+	// however, this should always be true for real builds of the game, i.e. debug only 
 
 };
