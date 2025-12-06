@@ -18,6 +18,7 @@
 #include "BoneSpikeGameObject.h"
 #include "BoneSpikeSpawner.h"
 #include "InteractableObject.h"
+#include "LSystem.h"
 
 class ofApp : public ofBaseApp {
 
@@ -50,6 +51,7 @@ public:
 	void setupTextElements();
 	void setupInteractableObjects();
 	void setupDynamicWalls();
+	void setupLSystems();
 	static GLFWwindow* getGLFW(void);
 	void setRawMouseCapture(bool on);
 	void recenterCursorToWindowCenter(void);
@@ -108,6 +110,7 @@ private:
 	vector<ParticleSystem*> infection_ps_vec;
 	vector<ParticleSystem*> spawn_portal_ps_vec;
 	vector<PortalSpawnBurst> portal_spawn_bursts;
+	vector<LSystem*> lsys;
 
 	// mouse-look and camera related
 	MyCustomCamera cam;
@@ -159,9 +162,11 @@ private:
 
 	// textures
 	ofImage texture, skyTexture, bloodstreamWallTexture, boneMarrowWallTexture, redBloodCellTexture;
+	ofImage l_sys_tex;
 
 	// priority renders: light source, skybox, use texture flag
 	glm::vec3 light_pos;
+	float light_orbit_angle;
 	ofIcoSpherePrimitive lightSphere, skySphere;
 	bool bUseTexture = true;
 
@@ -209,8 +214,14 @@ private:
 	const string GAME_OVER_TEXT = "GAME OVER!";
 	const string GAME_WON_TEXT = "YOU WIN! Congrats!";
 
-	const float INTERACT_RANGE = 100.0f;
+	// interacting thru a wall is an intended speedrun strat (we are not lazy)
+	const float INTERACT_RANGE = 150.0f;
+
 	const float LIGHT_HEIGHT = 620.0f;
+	const float LIGHT_ORBIT_RADIUS = 4000.0f;
+	const float LIGHT_ORBIT_SPEED = 0.314159f;
+	const glm::vec3 BLOODSTREAM_GROUND_CENTER = glm::vec3(-1850.0f, -50.0f, -100.0f);
+	const glm::vec3 BONE_MARROW_GROUND_CENTER = glm::vec3(13000.0f, -50.0f, -500.0f);
 
 	const float MUSIC_VOL = 0.2f;
 	const float SFX_VOL = 0.4f;
@@ -219,9 +230,12 @@ private:
 	const float PORTAL_ENEMY_SPEED = 250.0f;
 	const float PORTAL_ENEMY_YAW_SPREAD = glm::radians(20.0f);
 	const float PORTAL_ENEMY_PITCH_SPREAD = glm::radians(40.0f);
-	const int PORTAL_ENEMY_COUNT = 6;
-	const int PORTAL_BURST_COUNT = 4;
-	const float PORTAL_BURST_INTERVAL = 1.5f;
+	const int PORTAL_ENEMY_COUNT = 2;
+	const int PORTAL_BURST_COUNT = 15;
+	const float PORTAL_BURST_INTERVAL = 0.3f;
+
+	const float LSYS_CULL_DIST = 3000.0f;
+	const float LSYS_CULL_DIST_SQ = LSYS_CULL_DIST * LSYS_CULL_DIST;
 
 	const float BONE_SPIKE_MINIGAME_DURATION = 45.0f;
 

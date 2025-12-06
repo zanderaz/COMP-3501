@@ -51,9 +51,11 @@ void ofApp::setup() {
 	// create the player
 	player = new PlayerGameObject(empty_mesh.getMesh(), glm::vec3(0), 1.0f, cam);
 
-	// init light position to above the player
-	light_pos = player->getPosition(); 
-	light_pos.y = LIGHT_HEIGHT;
+	// init light position
+	light_orbit_angle = 0.0f;
+	glm::vec3 bsCenter = glm::vec3(BLOODSTREAM_GROUND_CENTER.x, LIGHT_HEIGHT, BLOODSTREAM_GROUND_CENTER.z);
+	light_pos = bsCenter + glm::vec3(LIGHT_ORBIT_RADIUS, 0.0f, 0.0f);
+	lightSphere.setPosition(light_pos);
 
 	// setup red blood cell particle system
 	rbc = new ParticleSystem(player->getCamera(), 25);
@@ -75,6 +77,9 @@ void ofApp::setup() {
 	setupDynamicWalls();
 	createWalls();
 	player->setWalls(&wall_objects_vec);
+
+	// setup all the L-systems for the game
+	setupLSystems();
 	
 	// make bullet hell checkpoint but have it not be visible or collidable until the user completes the bullet hell
 	bulletHellCheckpoint = new CheckpointGameObject(power_up_mesh.getMesh(), glm::vec3(-3500, -10, 950), 1.f, glm::vec3(15000, 0, 0));
@@ -146,6 +151,11 @@ void ofApp::exit(void) {
 	}
 	power_up_vec.clear();
 
+	for (int i = 0; i < lsys.size(); ++i) {
+		delete lsys[i];
+	}
+	lsys.clear();
+
 	for (GameObject* obj : wall_objects_vec) {
 		delete obj;
 	}
@@ -216,32 +226,7 @@ void ofApp::update() {
 
 			player->update(delta_time);
 
-			/*** ENEMY HANDLING (OLD) ***/
-
-			// updates for opps
-
-			/*
-			for (int i = 0; i < opposition_vec.size(); ++i) {
-				EnemyGameObject* enemy = opposition_vec[i];
-				enemy->faceTowards(player->getPosition());
-				enemy->update(delta_time);
-
-				// check for collisions between an enemy and the player
-				float dist = glm::distance(player->getPosition(), enemy->getPosition());
-				if (dist <= player->getRadius() + enemy->getRadius() && !player->getInvincibilityTimer().IsRunning()) {
-
-					// handle damage
-					player->getInvincibilityTimer().Start(2.0f);
-					player->setColour(glm::vec3(255.0f, 0.0f, 50.0f));
-					player->setHealth(player->getHealth() - 1);
-					// add SSE or other indicator that damage occurred
-
-					// clean up enemy
-					delete enemy;
-					opposition_vec.erase(opposition_vec.begin() + i);
-				}
-			}
-			*/
+			/*** ENEMY HANDLING ***/
 
 			// blood bullet hell stuff (all collision detection and deletion and allat is handled in the class by passing in the player)
 			if (bloodstream) {
@@ -321,10 +306,17 @@ void ofApp::update() {
 
 			/*** LIGHT SOURCE HANDLING ***/
 
-			glm::vec3 targetPos = player->getPosition();
-			targetPos.y = LIGHT_HEIGHT; // ensure light is above player
-			float lerpSpeed = 0.5f * delta_time;
-			light_pos = glm::mix(light_pos, targetPos, lerpSpeed);
+			light_orbit_angle += LIGHT_ORBIT_SPEED * delta_time;
+
+			// choose ground center based on current world
+			glm::vec3 groundCenter = bloodstream ? BLOODSTREAM_GROUND_CENTER : BONE_MARROW_GROUND_CENTER;
+
+			// compute orbit position (XZ circle around the center)
+			glm::vec3 orbitCenter(groundCenter.x, LIGHT_HEIGHT, groundCenter.z);
+			light_pos.x = orbitCenter.x + cosf(light_orbit_angle) * LIGHT_ORBIT_RADIUS;
+			light_pos.y = orbitCenter.y;
+			light_pos.z = orbitCenter.z + sinf(light_orbit_angle) * LIGHT_ORBIT_RADIUS;
+
 			lightSphere.setPosition(light_pos);
 
 			/*** SCREEN SPACE EFFECT HANDLING ***/
@@ -481,9 +473,29 @@ void ofApp::draw() {
 		lightSphere.draw();
 		if (bUseTexture) lightingShader->setUniform1i("useTexture", 1);
 
-		/**/
 		//start drawing game objects
+
 		player->draw(lightingShader);
+
+		if (bUseTexture && bloodstream) {
+			lightingShader->setUniformTexture("tex0", l_sys_tex, 0);
+		}
+
+		// L-systems are causing a lot of lag, so stop drawing anything thats too far away
+		glm::vec3 camWorldPos = player->getCamera().getPosition();
+		
+		for (int i = 0; i < lsys.size(); ++i) {
+			glm::vec3 treePos = lsys[i]->getPosition();
+			glm::vec3 d = treePos - camWorldPos;
+			float distSq = glm::dot(d, d);
+
+			if (distSq > LSYS_CULL_DIST_SQ) {
+				continue; // skip far trees entirely
+			}
+
+			lsys[i]->draw(lightingShader);
+		}
+
 		for (int i = 0; i < opposition_vec.size(); ++i) {
 			opposition_vec[i]->draw(lightingShader);
 		}
@@ -932,6 +944,7 @@ void ofApp::setupTextures() {
 	bloodstreamWallTexture.load("images/bloodold.jpeg");
 	boneMarrowWallTexture.load("images/bonemarrow.jpg");
 	redBloodCellTexture.load("images/rbctexture.jpg");
+	l_sys_tex.load("images/Lsys_tex.png");
 }
 
 void ofApp::setupTextElements() {
@@ -1011,6 +1024,12 @@ void ofApp::handleCheckpointCollision(CheckpointGameObject* checkpoint) {
 		boneMarrow = true;
 		skyTexture.load("images/bonemarrowskyboxtexture.jpeg");
 		checkpoint_teleport.play();
+
+		// reset light orbit to bone marrow area
+		light_orbit_angle = 0.0f;
+		glm::vec3 bmCenter(BONE_MARROW_GROUND_CENTER.x, LIGHT_HEIGHT, BONE_MARROW_GROUND_CENTER.z);
+		light_pos = bmCenter + glm::vec3(LIGHT_ORBIT_RADIUS, 0.0f, 0.0f);
+		lightSphere.setPosition(light_pos);
 
 		ofLog() << "Teleported to Bone Marrow environment";
 
@@ -1195,6 +1214,7 @@ void ofApp::createWalls() {
 	*/
 }
 
+// Essentially just setting up the doors to the final rooms in each world
 void ofApp::setupDynamicWalls() {
 	// setup the wall (door) to the bullet hell room
 	ofBoxPrimitive bulletHellWallMesh;
@@ -1213,6 +1233,18 @@ void ofApp::setupDynamicWalls() {
 	boneMarrowWallMesh.set(265, 300, 20);
 	boneMarrowBlockingWall2 = new GameObject(boneMarrowWallMesh.getMesh(), glm::vec3(11557.5, 300 / 2 - 50, -1050), 1.0f);
 	wall_objects_vec.push_back(boneMarrowBlockingWall2);
+}
+
+// Setup all of the L-systems (bloodstream only rn)
+void ofApp::setupLSystems() {
+	lsys.push_back(new LSystem(glm::vec3(0, 0, 900)));
+	lsys.push_back(new LSystem(glm::vec3(800, 0, 0)));
+	lsys.push_back(new LSystem(glm::vec3(-1200, 0, 300)));
+	lsys.push_back(new LSystem(glm::vec3(-5000, 0, 2000)));
+	lsys.push_back(new LSystem(glm::vec3(-1200, 0, 1600)));
+	lsys.push_back(new LSystem(glm::vec3(-3000, 0, 2000)));
+	lsys.push_back(new LSystem(glm::vec3(-3000, 0, 0)));
+	lsys.push_back(new LSystem(glm::vec3(-5000, 0, 0)));
 }
 
 // first room and exit
