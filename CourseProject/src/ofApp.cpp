@@ -1329,7 +1329,9 @@ ofMesh ofApp::createBoneMesh(float radius, float height) {
   
 }
 
+// create the hierchical transformation objects
 void ofApp::createBloodStreamCylinders() {
+
 	ofCylinderPrimitive cyl;
 	cyl.set(20, 50, 1);
 	ofMesh cylMesh = cyl.getMesh();
@@ -1364,6 +1366,26 @@ void ofApp::createBloodStreamCylinders() {
 	BloodStreamCylinderCollection* bscc8 = new BloodStreamCylinderCollection(cylMesh, 4);
 	bscc8->setPos(glm::vec3(-3910, -27.5, 275));
 	cylinder_collections_vec.push_back(bscc8);
+
+	BloodStreamCylinderCollection* bscc9 = new BloodStreamCylinderCollection(cylMesh, 4);
+	bscc9->setPos(glm::vec3(-258, -27.5, 152));
+	cylinder_collections_vec.push_back(bscc9);
+
+	BloodStreamCylinderCollection* bscc10 = new BloodStreamCylinderCollection(cylMesh, 4);
+	bscc10->setPos(glm::vec3(248, -27.5, -283));
+	cylinder_collections_vec.push_back(bscc10);
+
+	BloodStreamCylinderCollection* bscc11 = new BloodStreamCylinderCollection(cylMesh, 4);
+	bscc11->setPos(glm::vec3(-1295, -27.5, 500));
+	cylinder_collections_vec.push_back(bscc11);
+
+	BloodStreamCylinderCollection* bscc12 = new BloodStreamCylinderCollection(cylMesh, 4);
+	bscc12->setPos(glm::vec3(-459, -27.5, 440));
+	cylinder_collections_vec.push_back(bscc12);
+
+	BloodStreamCylinderCollection* bscc13 = new BloodStreamCylinderCollection(cylMesh, 4);
+	bscc13->setPos(glm::vec3(-2405, -27.5, 876));
+	cylinder_collections_vec.push_back(bscc13);
 
 }
 

@@ -230,7 +230,7 @@ private:
 	// interacting thru a wall is an intended speedrun strat (we are not lazy)
 	const float INTERACT_RANGE = 150.0f;
 
-	const float LIGHT_HEIGHT = 900.0f;
+	const float LIGHT_HEIGHT = 1500.0f;
 	const float LIGHT_ORBIT_RADIUS = 4000.0f;
 	const float LIGHT_ORBIT_SPEED = 0.25f;
 	const glm::vec3 BLOODSTREAM_GROUND_CENTER = glm::vec3(-1850.0f, -50.0f, -100.0f);
@@ -239,20 +239,20 @@ private:
 	const float MUSIC_VOL = 0.2f;
 	const float SFX_VOL = 0.4f;
 
-	const float PORTAL_ENEMY_LIFETIME = 10.0f;
+	const float PORTAL_ENEMY_LIFETIME = 6.0f;
 	const float PORTAL_ENEMY_SPEED = 250.0f;
 	const float PORTAL_ENEMY_YAW_SPREAD = glm::radians(20.0f);
 	const float PORTAL_ENEMY_PITCH_SPREAD = glm::radians(40.0f);
-	const int PORTAL_ENEMY_COUNT = 2;
-	const int PORTAL_BURST_COUNT = 15;
-	const float PORTAL_BURST_INTERVAL = 0.3f;
+	const int PORTAL_ENEMY_COUNT = 1;
+	const int PORTAL_BURST_COUNT = 16;
+	const float PORTAL_BURST_INTERVAL = 0.25f;
 
-	const float LSYS_CULL_DIST = 3000.0f;
+	const float LSYS_CULL_DIST = 3500.0f;
 	const float LSYS_CULL_DIST_SQ = LSYS_CULL_DIST * LSYS_CULL_DIST;
 
 	const float BONE_SPIKE_MINIGAME_DURATION = 45.0f;
 
-	const bool CREATE_CEILING = false;
+	const bool CREATE_CEILING = true;
 	// removing the ceiling helps with placing geometry into the game world
 	// however, this should always be true for real builds of the game, i.e. debug only 
 
