@@ -10,14 +10,25 @@
 
 
 class RedBloodCell : public EnemyGameObject {
+
 public:
-	RedBloodCell(ParticleSystem* rbc, const ofMesh& mesh, const glm::vec3& position, float scale);
+
+	RedBloodCell(ParticleSystem* rbc, const ofMesh& mesh, const glm::vec3& position,
+		float scale, float max_lifetime = -1.0f);
 	~RedBloodCell();
+	bool isExpired() const;
 	void update(float deltaTime) override;
 	void draw(ofShader* lightingShader) override;
 	void drawParticles();
+
 private:
+
 	ParticleSystem* ps;
+
+	float lifetime = 0.0f;
+	float max_lifetime = -1.0f;
+	bool use_lifetime = false;
+
 };
 
 

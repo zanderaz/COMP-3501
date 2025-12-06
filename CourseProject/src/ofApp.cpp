@@ -80,6 +80,12 @@ void ofApp::setup() {
 
 	// setup all the L-systems for the game
 	setupLSystems();
+
+	// setup the scenery for the bone marrow area
+	large_tall_bone = createBoneMesh(80.0f, 800.0f);
+	large_wide_bone = createBoneMesh(100.0f, 500.0f);
+	small_bone = createBoneMesh(20.0f, 80.0f);
+	createBoneMarrowScenery();
 	
 	// make bullet hell checkpoint but have it not be visible or collidable until the user completes the bullet hell
 	bulletHellCheckpoint = new CheckpointGameObject(power_up_mesh.getMesh(), glm::vec3(-3500, -10, 950), 1.f, glm::vec3(15000, 0, 0));
@@ -165,6 +171,11 @@ void ofApp::exit(void) {
 		delete obj;
 	}
 	interactables_vec.clear();
+
+	for (GameObject* bone : bone_marrow_scenery) {
+		delete bone;
+	}
+	bone_marrow_scenery.clear();
 
 	for (ParticleSystem* ps : infection_ps_vec) {
 		delete ps;
@@ -496,6 +507,15 @@ void ofApp::draw() {
 			lsys[i]->draw(lightingShader);
 		}
 
+		if (boneMarrow) {
+			if (bUseTexture) {
+				lightingShader->setUniformTexture("tex0", bone_tex, 0);
+			}
+			for (GameObject* bone : bone_marrow_scenery) {
+				bone->draw(lightingShader);
+			}
+		}
+		
 		for (int i = 0; i < opposition_vec.size(); ++i) {
 			opposition_vec[i]->draw(lightingShader);
 		}
@@ -729,25 +749,22 @@ void ofApp::keyPressed(int key) {
 		}
 	}
 
-	// debug, keys for testing shit
-	if (key == 't' || key == 'T') {
-		bUseTexture = !bUseTexture;
-	}
-	if (key == 'b' || key == 'B') {
-		bloodstream = !bloodstream;
-	}
+	// help box with basic controls and instructions
 	if (key == 'h' || key == 'H') {
 		textBox.showTemporarily(4.0f);
 	}
 
-	/*
-	if (key == 'g' || key == 'G') {
-		if (!bloodBulletHellActive) {
-			startBloodBulletHell(30.0f);
-		}
-	}
-	*/
+	// -------------------- DEBUG --------------------------------
+	// MUST REMOVE THESE BEFORE SUBMITTING
 
+	if (key == 't' || key == 'T') {
+		bUseTexture = !bUseTexture;
+	}
+
+	if (key == 'b' || key == 'B') {
+		bloodstream = !bloodstream;
+	}
+	
 	if (key == 'l' || key == 'L') {
 		player->setPosition(glm::vec3(15000, 0, 0));
 		boneMarrow = !boneMarrow;
@@ -935,8 +952,8 @@ void ofApp::setupShaders() {
 	}
 }
 
+// init textures
 void ofApp::setupTextures() {
-	// init textures
 	ofDisableArbTex();
 	texture.load("images/DOG.png");
 	skyTexture.load("images/blood.jpg");
@@ -945,6 +962,7 @@ void ofApp::setupTextures() {
 	boneMarrowWallTexture.load("images/bonemarrow.jpg");
 	redBloodCellTexture.load("images/rbctexture.jpg");
 	l_sys_tex.load("images/Lsys_tex.png");
+	bone_tex.load("images/bone_scenery_tex.png");
 }
 
 void ofApp::setupTextElements() {
@@ -1073,12 +1091,11 @@ void ofApp::spawnEnemiesAfterInfect(InteractableObject* interact_obj) {
 	ParticleSystem* sp_ps = nullptr;
 
 	// find portal, ensure we don't go OOB
-	try {
-		sp_ps = spawn_portal_ps_vec[interact_obj->getSpawnPortalIndex()];
+	if (interact_obj->getSpawnPortalIndex() <= -1) {
+		cout << "An infection was skipped and the player started the final room event early!" << endl;
+		ofExit();
 	}
-	catch (...) {
-		ofLog() << "Spawn Portal Logic had an index go out of bounds, go investigate!!";
-	}
+	sp_ps = spawn_portal_ps_vec[interact_obj->getSpawnPortalIndex()];
 	
 	// operations
 	if (sp_ps != nullptr) {
@@ -1095,7 +1112,7 @@ RedBloodCell* ofApp::createRedBloodCellEnemy(const glm::vec3& position, const gl
 	portal_rbc->loadImage("images/redbloodcell.jpg");
 	portal_rbc->setupRbcParticles();
 
-	RedBloodCell* new_enemy = new RedBloodCell(portal_rbc, rbc_mesh, position, 1.0f);
+	RedBloodCell* new_enemy = new RedBloodCell(portal_rbc, rbc_mesh, position, 1.0f, 2.0f);
 	new_enemy->setRadius(15.0f);
 	new_enemy->setVelocity(velocity);
 
@@ -1103,7 +1120,7 @@ RedBloodCell* ofApp::createRedBloodCellEnemy(const glm::vec3& position, const gl
 }
 
 // from the spawn portal orientation, calculate enemy dir, add randomization
-glm::vec3 ofApp::getPortalSpawnDirection(const glm::quat& portalOrientation) {
+glm::vec3 ofApp::getPortalSpawnDirection(const glm::quat& portalOrientation) const {
 
 	glm::vec3 forward_dir = portalOrientation * glm::vec3(0.0f, 0.0f, -1.0f);
 
@@ -1168,7 +1185,15 @@ void ofApp::updateSpawnPortalBursts(float deltaTime) {
 
 		for (int j = burst.enemies.size() - 1; j >= 0; --j) {
 			RedBloodCell* enemy = burst.enemies[j];
+
 			enemy->update(deltaTime);
+
+			// if this enemy has exceeded its 2-second lifetime, remove it
+			if (enemy->isExpired()) {
+				delete enemy;
+				burst.enemies.erase(burst.enemies.begin() + j);
+				continue; // don't check collision for this one
+			}
 
 			glm::vec3 to_player = player->getPosition() - enemy->getPosition();
 			float combined_radius = player->getRadius() + enemy->getRadius();
@@ -1179,6 +1204,7 @@ void ofApp::updateSpawnPortalBursts(float deltaTime) {
 			}
 		}
 
+		// Existing burst-level despawn: hides the portal & cleans any remaining enemies
 		if (burst.despawnTimer.FinishedAndStop()) {
 			burst.portalPs->setVisbility(false);
 
@@ -1189,6 +1215,92 @@ void ofApp::updateSpawnPortalBursts(float deltaTime) {
 			portal_spawn_bursts.erase(portal_spawn_bursts.begin() + i);
 		}
 	}
+}
+
+// creates a mesh for a "bone" type object
+ofMesh ofApp::createBoneMesh(float radius, float height) {
+	ofMesh bone_mesh;
+	bone_mesh.setMode(OF_PRIMITIVE_TRIANGLES);
+
+	// create the middle cylinder for the bone
+	ofMesh cyl_mesh;
+	cyl_mesh.setMode(OF_PRIMITIVE_TRIANGLES);
+
+	float cyl_radius = radius * 0.7f; // thinner, as full radius looks weird
+	float halfH = height * 0.5f;
+	int segments = 24;
+
+	// NOTE: cylinder creation is done manually as the primitive was not combining with the spheres correctly
+
+	// create top and bottom ring of vertices
+	for (int i = 0; i < segments; ++i) {
+		float t = (float)i / (float)segments;
+		float angle = t * TWO_PI;
+
+		float x = cosf(angle) * cyl_radius;
+		float z = sinf(angle) * cyl_radius;
+
+		glm::vec3 normal = glm::normalize(glm::vec3(x, 0.0f, z));
+
+		// top vertex
+		cyl_mesh.addVertex(glm::vec3(x, halfH, z));
+		cyl_mesh.addNormal(normal);
+
+		// bottom vertex
+		cyl_mesh.addVertex(glm::vec3(x, -halfH, z));
+		cyl_mesh.addNormal(normal);
+	}
+
+	// create side faces (two triangles per quad)
+	for (int i = 0; i < segments; ++i) {
+		int next = (i + 1) % segments;
+
+		// vertex indices in the shaftMesh
+		int top_i = 2 * i;
+		int bottom_i = 2 * i + 1;
+		int top_next = 2 * next;
+		int bottom_next = 2 * next + 1;
+
+		// triangle 1
+		cyl_mesh.addIndex(top_i);
+		cyl_mesh.addIndex(bottom_i);
+		cyl_mesh.addIndex(top_next);
+
+		// triangle 2
+		cyl_mesh.addIndex(top_next);
+		cyl_mesh.addIndex(bottom_i);
+		cyl_mesh.addIndex(bottom_next);
+	}
+
+	bone_mesh.append(cyl_mesh);
+
+	// create the spheres at the top and bottom
+	int sphere_res = 18;
+	ofMesh sphere_base = ofMesh::sphere(radius, sphere_res, OF_PRIMITIVE_TRIANGLES);
+
+	// lambda function for adding the spheres properly
+	auto addSphereAt = [&](const glm::vec3& center) {
+		ofMesh sphere = sphere_base;
+		auto& verts = sphere.getVertices();
+		for (auto& v : verts) {
+			v += center;
+		}
+		bone_mesh.append(sphere);
+	};
+
+	float lateralOff = radius * 0.75f; // sideways offset
+
+	glm::vec3 topCenter(0.0f, halfH, 0.0f);
+	glm::vec3 botCenter(0.0f, -halfH, 0.0f);
+
+	// merge meshes, two spheres at the top and bottom
+	addSphereAt(topCenter + glm::vec3(-lateralOff, 0.0f, 0.0f));
+	addSphereAt(topCenter + glm::vec3(lateralOff, 0.0f, 0.0f));
+	addSphereAt(botCenter + glm::vec3(-lateralOff, 0.0f, 0.0f));
+	addSphereAt(botCenter + glm::vec3(lateralOff, 0.0f, 0.0f));
+
+	return bone_mesh;
+
 }
 
 // create walls for the play area, as well as any other collidable objects 
@@ -1208,10 +1320,6 @@ void ofApp::createWalls() {
 	createWallsSection7();
 	createBoneMarrowLookout();
 
-	/*
-	ofLog() << "Created walls: " << wall_objects_vec.size() << " objects";
-	ofLog() << "Player starts at position: " << player->getPosition();
-	*/
 }
 
 // Essentially just setting up the doors to the final rooms in each world
@@ -1300,26 +1408,20 @@ void ofApp::createWallsSection1() {
 	// front of room
 
 	float frontWallSegmentWidth = (roomSize - hallwayWidth) / 2;
-
-	/*
-	ofBoxPrimitive frontWallLeftMesh;
-	frontWallLeftMesh.set(frontWallSegmentWidth, wallHeight, wallThickness);
-	GameObject* frontWallLeft = new GameObject(frontWallLeftMesh.getMesh(), glm::vec3(-(roomSize + hallwayWidth) / 4, wallHeight / 2 - 50, roomSize / 2), 1.0f);
-	wall_objects_vec.push_back(frontWallLeft);
-	*/
 	
 	ofBoxPrimitive frontWallRightMesh;
 	frontWallRightMesh.set(frontWallSegmentWidth, wallHeight, wallThickness);
 	GameObject* frontWallRight = new GameObject(frontWallRightMesh.getMesh(), glm::vec3((roomSize + hallwayWidth) / 4, wallHeight / 2 - 50, roomSize / 2), 1.0f);
 	wall_objects_vec.push_back(frontWallRight);
 	
-
-	// big ceiling for now
-	ofBoxPrimitive ceilingMesh;
-	ceilingMesh.set(5000, 5, 2200);
-	GameObject* ceiling = new GameObject(ceilingMesh.getMesh(), glm::vec3(-1500, wallHeight - 50, 700), 1.0f);
-	ceiling->setVisible(false);
-	wall_objects_vec.push_back(ceiling);
+	// bloodsteam ceiling
+	if (CREATE_CEILING) {
+		ofBoxPrimitive ceilingMesh;
+		ceilingMesh.set(5000, 5, 2200);
+		GameObject* ceiling = new GameObject(ceilingMesh.getMesh(), glm::vec3(-1500, wallHeight - 50, 700), 1.0f);
+		ceiling->setVisible(false);
+		wall_objects_vec.push_back(ceiling);
+	}
 
 }
 
@@ -1869,18 +1971,20 @@ void ofApp::createWallsSection5() {
 	GameObject* floor = new GameObject(floorMesh.getMesh(), glm::vec3(13000, -50, -500), 1.0f);
 	wall_objects_vec.push_back(floor);
 
-	// ceiling (big on right side, smaller ver on left so that the lookout still works
-	ofBoxPrimitive ceilingMesh;
-	ceilingMesh.set(5000, 5, 4000);
-	GameObject* ceiling1 = new GameObject(ceilingMesh.getMesh(), glm::vec3(13000, wallHeight - 50, -1100), 1.0f);
-	ceiling1->setVisible(false);
-	wall_objects_vec.push_back(ceiling1);
+	// bone marrow ceiling (big on right side, smaller ver on left so that the lookout still works)
+	if (CREATE_CEILING) {
+		ofBoxPrimitive ceilingMesh;
+		ceilingMesh.set(5000, 5, 4000);
+		GameObject* ceiling1 = new GameObject(ceilingMesh.getMesh(), glm::vec3(13000, wallHeight - 50, -1100), 1.0f);
+		ceiling1->setVisible(false);
+		wall_objects_vec.push_back(ceiling1);
 
-	ceilingMesh.set(2000, 5, 1000);
-	GameObject* ceiling2 = new GameObject(ceilingMesh.getMesh(), glm::vec3(14000, wallHeight - 50, 1100), 1.0f);
-	ceiling2->setVisible(false);
-	wall_objects_vec.push_back(ceiling2);
-
+		ceilingMesh.set(2000, 5, 1000);
+		GameObject* ceiling2 = new GameObject(ceilingMesh.getMesh(), glm::vec3(14000, wallHeight - 50, 1100), 1.0f);
+		ceiling2->setVisible(false);
+		wall_objects_vec.push_back(ceiling2);
+	}
+	
 	// starting area
 
 	ofBoxPrimitive startingWallMesh;
@@ -2112,5 +2216,17 @@ void ofApp::createBoneMarrowLookout() {
 	GameObject* invis_right = new GameObject(reused_mesh.getMesh(), glm::vec3(12700, 500, 825), 1.0f);
 	invis_right->setVisible(false);
 	wall_objects_vec.push_back(invis_right);
+
+}
+
+// create bones to be used as scenery for the bone marrow area
+void ofApp::createBoneMarrowScenery() {
+
+	// test objs rn
+	GameObject* bone1 = new GameObject(large_tall_bone, glm::vec3(13000, 100, -500), 1.0f);
+	bone_marrow_scenery.push_back(bone1);
+
+	GameObject* bone2 = new GameObject(large_wide_bone, glm::vec3(13500, 200, -700), 1.0f);
+	bone_marrow_scenery.push_back(bone2);
 
 }
