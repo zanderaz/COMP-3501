@@ -18,6 +18,8 @@
 #include "BoneSpikeGameObject.h"
 #include "BoneSpikeSpawner.h"
 #include "InteractableObject.h"
+#include "BloodStreamCylinder.h"
+#include "BloodStreamCylinderCollection.h"
 
 class ofApp : public ofBaseApp {
 
@@ -71,6 +73,7 @@ public:
 	void createWallsSection3();
 	void createWallsSection4();
 	void createVeins();
+	void createBloodStreamCylinders();
 	void createBloodStreamLookout();
 	void createBloodSpawnPortals();
 	void startBloodBulletHell(float duration = 30.0f);
@@ -108,6 +111,7 @@ private:
 	vector<ParticleSystem*> infection_ps_vec;
 	vector<ParticleSystem*> spawn_portal_ps_vec;
 	vector<PortalSpawnBurst> portal_spawn_bursts;
+	vector<BloodStreamCylinderCollection*> cylinder_collections_vec;
 
 	// mouse-look and camera related
 	MyCustomCamera cam;

@@ -98,8 +98,13 @@ void ofApp::setup() {
 	// spawn portals
 	createBloodSpawnPortals();
 
+	// cylinder collection hierarchical things
+	createBloodStreamCylinders();
+
 	// play main menu music
 	menu_music.play();
+
+	// bloodstream cylinder collection test
 }
 
 
@@ -180,6 +185,13 @@ void ofApp::exit(void) {
 	enemySpawner.clearEnemies();
 	boneSpikeSpawner.clearSpikes();
 
+	for (BloodStreamCylinderCollection* bscc : cylinder_collections_vec) {
+		for (BloodStreamCylinder* bsc : bscc->getCylinders()) {
+			delete bsc;
+		}
+		bscc->getCylinders().clear();
+	}
+	cylinder_collections_vec.clear();
 }
 
 
@@ -337,6 +349,10 @@ void ofApp::update() {
 
 			screenSpaceEffect.setInBloodstream(bloodstream);
 			screenSpaceEffect.setSpeedBoostActive(player->isSpeedBoostOn());
+
+			for (BloodStreamCylinderCollection* b : cylinder_collections_vec) {
+				b->update(delta_time);
+			}
 
 		}
 	}
@@ -552,6 +568,10 @@ void ofApp::draw() {
 			for (RedBloodCell* enemy : burst.enemies) {
 				enemy->draw(lightingShader);
 			}
+		}
+
+		for (BloodStreamCylinderCollection* b : cylinder_collections_vec) {
+			b->draw(lightingShader);
 		}
 
 		lightingShader->end();
@@ -1176,6 +1196,44 @@ void ofApp::updateSpawnPortalBursts(float deltaTime) {
 			portal_spawn_bursts.erase(portal_spawn_bursts.begin() + i);
 		}
 	}
+}
+
+void ofApp::createBloodStreamCylinders() {
+	ofCylinderPrimitive cyl;
+	cyl.set(20, 50, 1);
+	ofMesh cylMesh = cyl.getMesh();
+	BloodStreamCylinderCollection* bscc1 = new BloodStreamCylinderCollection(cylMesh, 4);
+	bscc1->setPos(glm::vec3(720, -27.5, 730));
+	cylinder_collections_vec.push_back(bscc1);
+
+	BloodStreamCylinderCollection* bscc2 = new BloodStreamCylinderCollection(cylMesh, 4);
+	bscc2->setPos(glm::vec3(-1400, -27.5, 1460));
+	cylinder_collections_vec.push_back(bscc2);
+
+	BloodStreamCylinderCollection* bscc3 = new BloodStreamCylinderCollection(cylMesh, 4);
+	bscc3->setPos(glm::vec3(-1800, -27.5, -470));
+	cylinder_collections_vec.push_back(bscc3);
+
+	BloodStreamCylinderCollection* bscc4 = new BloodStreamCylinderCollection(cylMesh, 4);
+	bscc4->setPos(glm::vec3(-2250, -27.5, -310));
+	cylinder_collections_vec.push_back(bscc4);
+
+	BloodStreamCylinderCollection* bscc5 = new BloodStreamCylinderCollection(cylMesh, 4);
+	bscc5->setPos(glm::vec3(-3910, -27.5, 1640));
+	cylinder_collections_vec.push_back(bscc5);
+
+	BloodStreamCylinderCollection* bscc6 = new BloodStreamCylinderCollection(cylMesh, 4);
+	bscc6->setPos(glm::vec3(-3050, -27.5, 1640));
+	cylinder_collections_vec.push_back(bscc6);
+
+	BloodStreamCylinderCollection* bscc7 = new BloodStreamCylinderCollection(cylMesh, 4);
+	bscc7->setPos(glm::vec3(-3050, -27.5, 275));
+	cylinder_collections_vec.push_back(bscc7);
+
+	BloodStreamCylinderCollection* bscc8 = new BloodStreamCylinderCollection(cylMesh, 4);
+	bscc8->setPos(glm::vec3(-3910, -27.5, 275));
+	cylinder_collections_vec.push_back(bscc8);
+
 }
 
 // create walls for the play area, as well as any other collidable objects 
