@@ -21,6 +21,7 @@ void ofApp::setup() {
 	veins_infected_count = 0;
 	marrow_infected_count = 0;
 	game_state = 0; // start on main menu
+	gameStarted = false;
 
 	// helpers for all shaders and textures
 	setupShaders();
@@ -108,8 +109,13 @@ void ofApp::setup() {
 	// spawn portals
 	createBloodSpawnPortals();
 
+	// cylinder collection hierarchical things
+	createBloodStreamCylinders();
+
 	// play main menu music
 	menu_music.play();
+
+	// bloodstream cylinder collection test
 }
 
 
@@ -200,6 +206,13 @@ void ofApp::exit(void) {
 	enemySpawner.clearEnemies();
 	boneSpikeSpawner.clearSpikes();
 
+	for (BloodStreamCylinderCollection* bscc : cylinder_collections_vec) {
+		for (BloodStreamCylinder* bsc : bscc->getCylinders()) {
+			delete bsc;
+		}
+		bscc->getCylinders().clear();
+	}
+	cylinder_collections_vec.clear();
 }
 
 
@@ -224,6 +237,11 @@ void ofApp::update() {
 
 	// -------------------- GAMEPLAY GAME STATE ---------------------------
 	else if (game_state == 1) {
+
+		if (!gameStarted) {
+			textBox.showTemporarily(5.0f);
+			gameStarted = true;
+		}
 
 		// check for game over beforehand
 		if (player->getHealth() <= 0) {
@@ -334,6 +352,10 @@ void ofApp::update() {
 
 			screenSpaceEffect.setInBloodstream(bloodstream);
 			screenSpaceEffect.setSpeedBoostActive(player->isSpeedBoostOn());
+
+			for (BloodStreamCylinderCollection* b : cylinder_collections_vec) {
+				b->update(delta_time);
+			}
 
 		}
 	}
@@ -580,6 +602,10 @@ void ofApp::draw() {
 			}
 		}
 
+		for (BloodStreamCylinderCollection* b : cylinder_collections_vec) {
+			b->draw(lightingShader);
+		}
+
 		lightingShader->end();
 
 		// draw all particles outside of lighting shader as to not corrupt the shader
@@ -714,7 +740,7 @@ void ofApp::keyPressed(int key) {
 								room_event_start.play();
 
 								// Display message
-								textBox.setup("Survive for the incoming spikes for 45 seconds!", &dialog_font, 500.0f);
+								textBox.setup("Survive the incoming spikes for 45 seconds!", &dialog_font, 500.0f);
 								textBox.setSize(500, 120);
 								textBox.showTemporarily(5.0f);
 							}
@@ -881,7 +907,7 @@ void ofApp::mouseExited(int x, int y) {
 //--------------------------------------------------------------
 void ofApp::windowResized(int w, int h) {
 	screenSpaceEffect.setResolution(w, h);
-	textBox.setPosition((ofGetWidth() / 2.0f) - 250, ofGetHeight() - 200);
+	textBox.setPosition((ofGetWidth() / 2.0f) - 250, ofGetHeight() - 250);
 }
 
 
@@ -986,7 +1012,7 @@ void ofApp::setupTextElements() {
 	textBox.setBackgroundColor(ofColor(0, 0, 0, 220));
 	textBox.setTextColor(ofColor(255, 255, 0));
 	textBox.setBorderColor(ofColor(255, 255, 255));
-	textBox.setPosition((ofGetWidth() / 2.0f) - 250, ofGetHeight() - 150);
+	textBox.setPosition((ofGetWidth() / 2.0f) - 250, ofGetHeight() - 250);
 	textBox.setBorderWidth(3.0f);
 	showTextBox = false;
 }
@@ -1300,6 +1326,44 @@ ofMesh ofApp::createBoneMesh(float radius, float height) {
 	addSphereAt(botCenter + glm::vec3(lateralOff, 0.0f, 0.0f));
 
 	return bone_mesh;
+  
+}
+
+void ofApp::createBloodStreamCylinders() {
+	ofCylinderPrimitive cyl;
+	cyl.set(20, 50, 1);
+	ofMesh cylMesh = cyl.getMesh();
+	BloodStreamCylinderCollection* bscc1 = new BloodStreamCylinderCollection(cylMesh, 4);
+	bscc1->setPos(glm::vec3(720, -27.5, 730));
+	cylinder_collections_vec.push_back(bscc1);
+
+	BloodStreamCylinderCollection* bscc2 = new BloodStreamCylinderCollection(cylMesh, 4);
+	bscc2->setPos(glm::vec3(-1400, -27.5, 1460));
+	cylinder_collections_vec.push_back(bscc2);
+
+	BloodStreamCylinderCollection* bscc3 = new BloodStreamCylinderCollection(cylMesh, 4);
+	bscc3->setPos(glm::vec3(-1800, -27.5, -470));
+	cylinder_collections_vec.push_back(bscc3);
+
+	BloodStreamCylinderCollection* bscc4 = new BloodStreamCylinderCollection(cylMesh, 4);
+	bscc4->setPos(glm::vec3(-2250, -27.5, -310));
+	cylinder_collections_vec.push_back(bscc4);
+
+	BloodStreamCylinderCollection* bscc5 = new BloodStreamCylinderCollection(cylMesh, 4);
+	bscc5->setPos(glm::vec3(-3910, -27.5, 1640));
+	cylinder_collections_vec.push_back(bscc5);
+
+	BloodStreamCylinderCollection* bscc6 = new BloodStreamCylinderCollection(cylMesh, 4);
+	bscc6->setPos(glm::vec3(-3050, -27.5, 1640));
+	cylinder_collections_vec.push_back(bscc6);
+
+	BloodStreamCylinderCollection* bscc7 = new BloodStreamCylinderCollection(cylMesh, 4);
+	bscc7->setPos(glm::vec3(-3050, -27.5, 275));
+	cylinder_collections_vec.push_back(bscc7);
+
+	BloodStreamCylinderCollection* bscc8 = new BloodStreamCylinderCollection(cylMesh, 4);
+	bscc8->setPos(glm::vec3(-3910, -27.5, 275));
+	cylinder_collections_vec.push_back(bscc8);
 
 }
 
@@ -1900,6 +1964,9 @@ void ofApp::startBloodBulletHell(float duration) {
 	bloodBulletHellTimer.Start(duration);
 	enemySpawner.startSpawning(0.25f);
 	room_event_start.play();
+	textBox.setup("Survive the incoming red blood cells for 30 seconds!", &dialog_font, 525.0f);
+	textBox.setSize(525, 120);
+	textBox.showTemporarily(5.0f);
 	//ofLog() << "Bullet Hell Start";
 }
 
