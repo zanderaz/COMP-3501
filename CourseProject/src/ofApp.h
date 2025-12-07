@@ -107,9 +107,7 @@ private:
 
 	// game object collections
 	PlayerGameObject* player;
-	vector<EnemyGameObject*> opposition_vec;
 	vector<CheckpointGameObject*> checkpoint_vec;
-	vector<PowerUpObject*> power_up_vec;
 	vector<GameObject*> wall_objects_vec;
 	vector<InteractableObject*> interactables_vec;
 	vector<ParticleSystem*> infection_ps_vec;
@@ -180,10 +178,6 @@ private:
 	float light_orbit_angle;
 	ofIcoSpherePrimitive lightSphere, skySphere;
 	bool bUseTexture = true;
-
-	// particle systems
-	ParticleSystem* rbc;
-	RedBloodCell* redBloodCell;
 
 	// SSE related
 	ScreenSpaceEffect screenSpaceEffect;

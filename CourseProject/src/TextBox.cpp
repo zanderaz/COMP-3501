@@ -103,11 +103,11 @@ void TextBox::draw() {
         return;
     }
 
-    // Draw background
+    // draw background
     ofSetColor(backgroundColor);
     ofDrawRectangle(bounds);
 
-    // Draw border
+    // draw border
     if (borderWidth > 0) {
         ofSetColor(borderColor);
         ofNoFill();
@@ -116,7 +116,7 @@ void TextBox::draw() {
         ofFill();
     }
 
-    // Draw text
+    // draw text
     ofSetColor(textColor);
     float lineHeight = font->getLineHeight();
     float y = bounds.y + padding + lineHeight;

@@ -20,7 +20,7 @@ BoneSpikeSpawner::BoneSpikeSpawner()
 void BoneSpikeSpawner::setup(PlayerGameObject* player) {
     this->player = player;
 
-    // Clear any existing positions
+    // clear any existing positions
     for (int i = 0; i < 4; i++) {
         wallPositions[i].clear();
         wallDirections[i].clear();
@@ -86,13 +86,6 @@ void BoneSpikeSpawner::setup(PlayerGameObject* player) {
             wallDirections[i].push_back(wallNormals[i]);
         }
     }
-
-    /*
-    // log the number of positions created for each wall
-    for (int i = 0; i < 4; i++) {
-        ofLog() << "Wall " << i << " has " << wallPositions[i].size() << " spike positions";
-    }
-    */
 }
 
 void BoneSpikeSpawner::startMinigame(float duration) {
@@ -101,15 +94,12 @@ void BoneSpikeSpawner::startMinigame(float duration) {
     minigameTimer.Start(duration);
     spikeWaveTimer.Start(waveInterval);
     currentWall = ofRandom(0,4);
-
-    //ofLog() << "Bone spike minigame started! Duration: " << duration << " seconds";
 }
 
 void BoneSpikeSpawner::stopMinigame() {
     isSpikingActive = false;
     minigameComplete = true;
     clearSpikes();
-    //ofLog() << "Bone spike minigame completed!";
 }
 
 void BoneSpikeSpawner::update(float deltaTime, PlayerGameObject* player) {

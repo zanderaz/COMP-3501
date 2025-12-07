@@ -58,13 +58,6 @@ void ofApp::setup() {
 	light_pos = bsCenter + glm::vec3(LIGHT_ORBIT_RADIUS, 0.0f, 0.0f);
 	lightSphere.setPosition(light_pos);
 
-	// setup red blood cell particle system
-	rbc = new ParticleSystem(player->getCamera(), 25);
-	rbc->loadShader("shader/rbcparticle.vert", "shader/rbcparticle.frag", "shader/rbcparticle.geom");
-	rbc->loadImage("images/redbloodcell.jpg");
-	rbc->setupRbcParticles();
-	redBloodCell = new RedBloodCell(rbc, rbc_mesh, glm::vec3(20, 200, -20), 1.0f);
-
 	// setup SSE handler
 	screenSpaceEffect.setup(ofGetWidth(), ofGetHeight());
 
@@ -114,8 +107,6 @@ void ofApp::setup() {
 
 	// play main menu music
 	menu_music.play();
-
-	// bloodstream cylinder collection test
 }
 
 
@@ -146,22 +137,11 @@ void ofApp::exit(void) {
 	delete player;
 	delete lightingShader;
 	delete skyBoxShader;
-	delete redBloodCell;
-
-	for (int i = 0; i < opposition_vec.size(); ++i) {
-		delete opposition_vec[i];
-	}
-	opposition_vec.clear();
 
 	for (int i = 0; i < checkpoint_vec.size(); ++i) {
 		delete checkpoint_vec[i];
 	}
 	checkpoint_vec.clear();
-
-	for (int i = 0; i < power_up_vec.size(); ++i) {
-		delete power_up_vec[i];
-	}
-	power_up_vec.clear();
 
 	for (int i = 0; i < lsys.size(); ++i) {
 		delete lsys[i];
@@ -325,7 +305,6 @@ void ofApp::update() {
 
 			/*** PARTICLE SYSTEM HANDLING ***/
 
-			redBloodCell->update(delta_time); // will update particle system stored inside
 			for (ParticleSystem* i_ps : infection_ps_vec) {
 				i_ps->update();
 			}
@@ -352,6 +331,8 @@ void ofApp::update() {
 
 			screenSpaceEffect.setInBloodstream(bloodstream);
 			screenSpaceEffect.setSpeedBoostActive(player->isSpeedBoostOn());
+
+			/*** HIERARCHICAL OBJECT HANDLING ***/
 
 			for (BloodStreamCylinderCollection* b : cylinder_collections_vec) {
 				b->update(delta_time);
@@ -537,29 +518,9 @@ void ofApp::draw() {
 				bone->draw(lightingShader);
 			}
 		}
-		
-		for (int i = 0; i < opposition_vec.size(); ++i) {
-			opposition_vec[i]->draw(lightingShader);
-		}
 
 		if (boneMarrow && boneSpikeMinigameActive) {
 			boneSpikeSpawner.draw(lightingShader);
-
-			
-			// Draw minigame timer in HUD
-			/*
-			if (boneSpikeSpawner.isActive()) {
-				float timeLeft = BONE_SPIKE_MINIGAME_DURATION - boneSpikeSpawner.getMinigameTimer().getElapsed();
-				if (timeLeft < 0) timeLeft = 0;
-
-				ofSetColor(255, 255, 0);
-				ofDrawBitmapString("Spike Minigame: " + to_string((int)timeLeft) + "s", glm::vec2(30, 130));
-			}
-			*/
-		}
-
-		for (int i = 0; i < power_up_vec.size(); ++i) {
-			power_up_vec[i]->draw(lightingShader);
 		}
 
 		lightingShader->setUniform1i("useTexture", 0);
@@ -672,13 +633,6 @@ void ofApp::draw() {
 		float infectX = ofGetWidth() - bounds.width - padding;
 		float infectY = ofGetHeight() - padding;
 		hud_font.drawString(infectionStr, infectX, infectY);
-		
-		// DEBUG: minecraft f3 menu with developer info
-		ofDrawBitmapString("FPS: " + to_string(ofGetFrameRate()), glm::vec2(30, 30));
-		ofDrawBitmapString("X-pos: " + to_string(player->getPosition().x), glm::vec2(30, 50));
-		ofDrawBitmapString("Y-pos: " + to_string(player->getPosition().y), glm::vec2(30, 60));
-		ofDrawBitmapString("Z-pos: " + to_string(player->getPosition().z), glm::vec2(30, 70));
-
 	}
 
 	// -------------------- GAME OVER GAME STATE ---------------------------
@@ -777,27 +731,10 @@ void ofApp::keyPressed(int key) {
 
 	// help box with basic controls and instructions
 	if (key == 'h' || key == 'H') {
+		textBox.setup("Welcome to Triple Sicks! Use WASD to move, mouse to look around, and right-click to toggle mouse capture.", &dialog_font, 500.0f);
+		textBox.setSize(550, 150);
+		textBox.setPosition((ofGetWidth() / 2.0f) - 250, ofGetHeight() - 250);
 		textBox.showTemporarily(4.0f);
-	}
-
-	// -------------------- DEBUG --------------------------------
-	// MUST REMOVE THESE BEFORE SUBMITTING
-
-	if (key == 't' || key == 'T') {
-		bUseTexture = !bUseTexture;
-	}
-
-	if (key == 'b' || key == 'B') {
-		bloodstream = !bloodstream;
-	}
-	
-	if (key == 'l' || key == 'L') {
-		player->setPosition(glm::vec3(15000, 0, 0));
-		boneMarrow = !boneMarrow;
-		marrow_infected_count = 4;
-		updateBoneMarrowBlockingWalls();
-		marrow_infected_count = 8;
-		updateBoneMarrowBlockingWalls();
 	}
 }
 
@@ -1074,9 +1011,6 @@ void ofApp::handleCheckpointCollision(CheckpointGameObject* checkpoint) {
 		glm::vec3 bmCenter(BONE_MARROW_GROUND_CENTER.x, LIGHT_HEIGHT, BONE_MARROW_GROUND_CENTER.z);
 		light_pos = bmCenter + glm::vec3(LIGHT_ORBIT_RADIUS, 0.0f, 0.0f);
 		lightSphere.setPosition(light_pos);
-
-		ofLog() << "Teleported to Bone Marrow environment";
-
 	}
 }
 
@@ -1989,14 +1923,12 @@ void ofApp::startBloodBulletHell(float duration) {
 	textBox.setup("Survive the incoming red blood cells for 30 seconds!", &dialog_font, 525.0f);
 	textBox.setSize(525, 120);
 	textBox.showTemporarily(5.0f);
-	//ofLog() << "Bullet Hell Start";
 }
 
 void ofApp::endBloodBulletHell() {
 	bloodBulletHellActive = false;
 	enemySpawner.stopSpawning();
 	enemySpawner.clearEnemies();
-	//ofLog() << "Bullet Hell End";
 }
 
 // updates the wall going into the bullet hell room
