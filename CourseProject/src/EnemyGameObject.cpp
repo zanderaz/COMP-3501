@@ -11,14 +11,9 @@ EnemyGameObject::EnemyGameObject(const ofMesh& mesh, const glm::vec3& position, 
 
 // specialized update function that moves the enemy along its direction vec
 void EnemyGameObject::update(float dt) {
-	
-	// get forward direction, should point towards the player, then move
-	//glm::vec3 forward = orientation * glm::vec3(0.0f, 0.0f, -1.0f);
-	//position += forward * enemy_speed * dt;
 	glm::vec3 newPos = getPosition() + velocity * dt;
 	setPosition(newPos);
 
-	// Optional: Face movement direction
 	if (glm::length(velocity) > 0.1f) {
 		glm::quat rotation = glm::quatLookAt(glm::normalize(velocity), glm::vec3(0, 1, 0));
 		setOrientation(rotation);

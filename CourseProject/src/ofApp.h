@@ -179,10 +179,6 @@ private:
 	ofIcoSpherePrimitive lightSphere, skySphere;
 	bool bUseTexture = true;
 
-	// particle systems
-	ParticleSystem* rbc;
-	RedBloodCell* redBloodCell;
-
 	// SSE related
 	ScreenSpaceEffect screenSpaceEffect;
 	bool bloodstream, boneMarrow;

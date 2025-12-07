@@ -18,9 +18,6 @@ void BloodStreamCylinder::draw(ofShader* lightingShader) {
 	glm::mat4 world = node.getGlobalTransformMatrix();
 	if (!visible) return;
 
-	//world = glm::scale(world, glm::vec3(scale));
-	//world = glm::scale(world, glm::vec3(widthScale, heightScale, widthScale));
-
 	lightingShader->setUniformMatrix4f("worldMatrix", world);
 	lightingShader->setUniform3f("objectColor", colour);
 	lightingShader->setUniform1i("isLight", false);

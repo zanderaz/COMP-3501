@@ -46,11 +46,7 @@ void EnemySpawner::spawnEnemy() {
     // random y pos in arena
     spawnPos.y = ofRandom(-25, 200);
 
-    //for testing spawn pos
-    //ofLog() << "Spawning enemy at position: " << spawnPos;
-
     // create enemy at spawn point
-    //EnemyGameObject* enemy = new EnemyGameObject(*enemyMesh, spawnPos, 1.0f);
 
     ParticleSystem* rbc = new ParticleSystem(player->getCamera(), 25);
     rbc->loadShader("shader/rbcparticle.vert", "shader/rbcparticle.frag", "shader/rbcparticle.geom");
@@ -167,8 +163,6 @@ void EnemySpawner::spawnEnemy() {
     redBloodCell->setVelocity(direction * speed);
 
     enemies.push_back(redBloodCell);
-
-    //ofLog() << enemies.size();
 
     // restart timer for next spawn
     spawnTimer.Start(spawnInterval);

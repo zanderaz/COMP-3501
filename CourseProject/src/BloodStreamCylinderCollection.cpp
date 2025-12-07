@@ -14,9 +14,9 @@ BloodStreamCylinderCollection::BloodStreamCylinderCollection(const ofMesh& cylMe
         c->setHeightScale(1.f);
 
         if (i == 0) {
-            // First cylinder is attached to the root
+            // first cylinder is attached to the root
             c->getNode().setParent(rootNode);
-            c->getNode().setPosition(0, 0, 0);  // Local position relative to root
+            c->getNode().setPosition(0, 0, 0);  // local position relative to root
         }
         else {
             BloodStreamCylinder* parent = cylinders[i - 1];

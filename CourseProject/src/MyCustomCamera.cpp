@@ -11,7 +11,6 @@ MyCustomCamera::MyCustomCamera() {
 }
 
 void MyCustomCamera::update(float deltaTime) {
-    // nothing yet
 }
 
 void MyCustomCamera::pitch(float amt) {
