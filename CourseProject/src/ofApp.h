@@ -8,7 +8,6 @@
 #include "PlayerGameObject.h"
 #include "CheckpointGameObject.h"
 #include "EnemyGameObject.h"
-#include "PowerUpObject.h"
 #include "timer.h"
 #include "redBloodCell.h"
 #include "ParticleSystem.h"
@@ -142,8 +141,9 @@ private:
 	ofSpherePrimitive power_up_mesh;
 	ofSpherePrimitive empty_mesh;
 	ofSpherePrimitive bulletHellEnemyMesh;
-	ofMesh large_tall_bone;
-	ofMesh large_wide_bone;
+	ofMesh taller_bone;
+	ofMesh tall_bone;
+	ofMesh large_bone;
 	ofMesh small_bone;
 
 	// shader

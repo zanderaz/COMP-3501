@@ -76,8 +76,9 @@ void ofApp::setup() {
 	setupLSystems();
 
 	// setup the scenery for the bone marrow area
-	large_tall_bone = createBoneMesh(80.0f, 800.0f);
-	large_wide_bone = createBoneMesh(100.0f, 500.0f);
+	taller_bone = createBoneMesh(70.0f, 1100.0f);
+	tall_bone = createBoneMesh(80.0f, 800.0f);
+	large_bone = createBoneMesh(110.0f, 600.0f);
 	small_bone = createBoneMesh(20.0f, 80.0f);
 	createBoneMarrowScenery();
 	
@@ -332,12 +333,14 @@ void ofApp::update() {
 			screenSpaceEffect.setInBloodstream(bloodstream);
 			screenSpaceEffect.setSpeedBoostActive(player->isSpeedBoostOn());
 
-			/*** HIERARCHICAL OBJECT HANDLING ***/
+			/*** HIERARCHICAL TRANSFORMATION HANDLING ***/
 
-			for (BloodStreamCylinderCollection* b : cylinder_collections_vec) {
-				b->update(delta_time);
+			if (bloodstream) {
+				for (BloodStreamCylinderCollection* b : cylinder_collections_vec) {
+					b->update(delta_time);
+				}
 			}
-
+			
 		}
 	}
 
@@ -495,19 +498,22 @@ void ofApp::draw() {
 			lightingShader->setUniformTexture("tex0", l_sys_tex, 0);
 		}
 
-		// L-systems are causing a lot of lag, so stop drawing anything thats too far away
-		glm::vec3 camWorldPos = player->getCamera().getPosition();
-		
-		for (int i = 0; i < lsys.size(); ++i) {
-			glm::vec3 treePos = lsys[i]->getPosition();
-			glm::vec3 d = treePos - camWorldPos;
-			float distSq = glm::dot(d, d);
+		if (bloodstream) {
 
-			if (distSq > LSYS_CULL_DIST_SQ) {
-				continue; // skip far trees entirely
+			// L-systems are causing a lot of lag, so stop drawing anything thats too far away
+			glm::vec3 camWorldPos = player->getCamera().getPosition();
+
+			for (int i = 0; i < lsys.size(); ++i) {
+				glm::vec3 treePos = lsys[i]->getPosition();
+				glm::vec3 d = treePos - camWorldPos;
+				float distSq = glm::dot(d, d);
+
+				if (distSq > LSYS_CULL_DIST_SQ) {
+					continue; // skip far trees entirely
+				}
+
+				lsys[i]->draw(lightingShader);
 			}
-
-			lsys[i]->draw(lightingShader);
 		}
 
 		if (boneMarrow) {
@@ -528,7 +534,6 @@ void ofApp::draw() {
 			checkpoint_vec[i]->draw(lightingShader);
 		}
 		if (bUseTexture) lightingShader->setUniform1i("useTexture", 1);
-
 
 		// interactable drawing, no texture
 		lightingShader->setUniform1i("useTexture", 0);
@@ -563,8 +568,10 @@ void ofApp::draw() {
 			}
 		}
 
-		for (BloodStreamCylinderCollection* b : cylinder_collections_vec) {
-			b->draw(lightingShader);
+		if (bloodstream) {
+			for (BloodStreamCylinderCollection* b : cylinder_collections_vec) {
+				b->draw(lightingShader);
+			}
 		}
 
 		lightingShader->end();
@@ -2244,10 +2251,72 @@ void ofApp::createBoneMarrowLookout() {
 void ofApp::createBoneMarrowScenery() {
 
 	// test objs rn
-	GameObject* bone1 = new GameObject(large_tall_bone, glm::vec3(13000, 100, -500), 1.0f);
+	GameObject* bone1 = new GameObject(tall_bone, glm::vec3(13000, 100, -500), 1.0f);
+	bone1->setOrientation(glm::angleAxis(ofRandom(0.0f, 180.0f), glm::vec3(0, 1, 0)));
 	bone_marrow_scenery.push_back(bone1);
 
-	GameObject* bone2 = new GameObject(large_wide_bone, glm::vec3(13500, 200, -700), 1.0f);
+	GameObject* bone2 = new GameObject(taller_bone, glm::vec3(14915, 100, -395), 1.0f);
+	bone2->setOrientation(glm::angleAxis(ofRandom(0.0f, 180.0f), glm::vec3(0, 1, 0)));
 	bone_marrow_scenery.push_back(bone2);
+
+	GameObject* bone3 = new GameObject(large_bone, glm::vec3(14915, 100, 325), 1.0f);
+	bone3->setOrientation(glm::angleAxis(ofRandom(0.0f, 180.0f), glm::vec3(0, 1, 0)));
+	bone_marrow_scenery.push_back(bone3);
+
+	GameObject* bone4 = new GameObject(tall_bone, glm::vec3(13750, 100, 740), 1.0f);
+	bone4->setOrientation(glm::angleAxis(ofRandom(0.0f, 180.0f), glm::vec3(0, 1, 0)));
+	bone_marrow_scenery.push_back(bone4);
+
+	GameObject* bone5 = new GameObject(taller_bone, glm::vec3(13545, 100, 1630), 1.0f);
+	bone5->setOrientation(glm::angleAxis(ofRandom(0.0f, 180.0f), glm::vec3(0, 1, 0)));
+	bone_marrow_scenery.push_back(bone5);
+
+	GameObject* bone6 = new GameObject(large_bone, glm::vec3(12920, 100, 1495), 1.0f);
+	bone6->setOrientation(glm::angleAxis(ofRandom(0.0f, 180.0f), glm::vec3(0, 1, 0)));
+	bone_marrow_scenery.push_back(bone6);
+
+	GameObject* bone7 = new GameObject(tall_bone, glm::vec3(12835, 100, 735), 1.0f);
+	bone7->setOrientation(glm::angleAxis(ofRandom(0.0f, 180.0f), glm::vec3(0, 1, 0)));
+	bone_marrow_scenery.push_back(bone7);
+
+	GameObject* bone8 = new GameObject(taller_bone, glm::vec3(12175, 100, 850), 1.0f);
+	bone8->setOrientation(glm::angleAxis(ofRandom(0.0f, 180.0f), glm::vec3(0, 1, 0)));
+	bone_marrow_scenery.push_back(bone8);
+
+	GameObject* bone9 = new GameObject(tall_bone, glm::vec3(12800, 100, 75), 1.0f);
+	bone9->setOrientation(glm::angleAxis(ofRandom(0.0f, 180.0f), glm::vec3(0, 1, 0)));
+	bone_marrow_scenery.push_back(bone9);
+
+	GameObject* bone10 = new GameObject(taller_bone, glm::vec3(13470, 100, 155), 1.0f);
+	bone10->setOrientation(glm::angleAxis(ofRandom(0.0f, 180.0f), glm::vec3(0, 1, 0)));
+	bone_marrow_scenery.push_back(bone10);
+
+	GameObject* bone11 = new GameObject(large_bone, glm::vec3(11955, 100, -70), 1.0f);
+	bone11->setOrientation(glm::angleAxis(ofRandom(0.0f, 180.0f), glm::vec3(0, 1, 0)));
+	bone_marrow_scenery.push_back(bone11);
+
+	GameObject* bone12 = new GameObject(tall_bone, glm::vec3(11280, 100, 195), 1.0f);
+	bone12->setOrientation(glm::angleAxis(ofRandom(0.0f, 180.0f), glm::vec3(0, 1, 0)));
+	bone_marrow_scenery.push_back(bone12);
+
+	GameObject* bone13 = new GameObject(taller_bone, glm::vec3(10535, 100, -160), 1.0f);
+	bone13->setOrientation(glm::angleAxis(ofRandom(0.0f, 180.0f), glm::vec3(0, 1, 0)));
+	bone_marrow_scenery.push_back(bone13);
+
+	GameObject* bone14 = new GameObject(large_bone, glm::vec3(11230, 100, -875), 1.0f);
+	bone14->setOrientation(glm::angleAxis(ofRandom(0.0f, 180.0f), glm::vec3(0, 1, 0)));
+	bone_marrow_scenery.push_back(bone14);
+
+	GameObject* bone15 = new GameObject(taller_bone, glm::vec3(10855, 100, -2040), 1.0f);
+	bone15->setOrientation(glm::angleAxis(ofRandom(0.0f, 180.0f), glm::vec3(0, 1, 0)));
+	bone_marrow_scenery.push_back(bone15);
+
+	GameObject* bone16 = new GameObject(tall_bone, glm::vec3(12060, 100, -2230), 1.0f);
+	bone16->setOrientation(glm::angleAxis(ofRandom(0.0f, 180.0f), glm::vec3(0, 1, 0)));
+	bone_marrow_scenery.push_back(bone16);
+
+	GameObject* bone17 = new GameObject(taller_bone, glm::vec3(12185, 100, -1200), 1.0f);
+	bone17->setOrientation(glm::angleAxis(ofRandom(0.0f, 180.0f), glm::vec3(0, 1, 0)));
+	bone_marrow_scenery.push_back(bone17);
 
 }
