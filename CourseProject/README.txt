@@ -27,3 +27,4 @@ Tested in Windows 11 x64 (AMD) on discrete graphics and Windows 10 x64 (AMD) on 
 - holding shift while using WASD causes keys to become stuck, e.g. 'w' will stay held when released, which constantly applies unwanted forward movement
 - if an Nvidia banner pop-up appears (from Nvidia app), mouse tracking will desync/jump somewhere else on the screen
 - looking straight up or down causes changes to yaw to increase dramatically
+
