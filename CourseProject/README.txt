@@ -12,9 +12,10 @@ Reference the final project report for information on design decisions.
 2. Unzip your .zip file into a new folder in /<of_folder_location>/apps/myApps/ .
 3. Open /<of_folder_location>/projectGenerator/projectGenerator.exe
 4. Click the "import" button and navigate to where you unzipped your submission in /myApps/ .
-5. Click "Generate" (or if the button prompts change, click "Update").
-6. projectGenerator.exe should now prompt you to open the project. Click the button "Open in IDE".
-7. In Visual Studio 2022, run the project (click the green "play" button).
+5. Select the folder labelled "Triple Sicks" when importing, as this is where the game files are.
+6. Click "Generate" (or if the button prompts change, click "Update").
+7. projectGenerator.exe should now prompt you to open the project. Click the button "Open in IDE".
+8. In Visual Studio 2022, run the project (click the green "play" button).
 
 
 --> Testing Environments <--
